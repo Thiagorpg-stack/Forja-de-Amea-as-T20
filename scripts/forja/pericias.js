@@ -44,3 +44,35 @@ export function atualizacaoDePericias(atuais, dados, contexto) {
   if (!tocaPericias) return [dados, contexto];
   return [completarPericiasParciais(atuais, dados), { ...contexto, diff: false }];
 }
+
+// Atributo que cada perícia deve ter depois de uma gravação: o que a gravação pediu (caminho achatado, objeto aninhado ou
+// o system.pericias inteiro) ou, sem pedido, o que tinha antes. Devolve { chave: atributo } só das que ficaram diferentes.
+export function atributosDesfeitos(antes, depois, dados) {
+  const pedido = (chave) => dados?.[`system.pericias.${chave}.atributo`]
+    ?? dados?.['system.pericias']?.[chave]?.atributo ?? dados?.system?.pericias?.[chave]?.atributo;
+  const desfeitos = {};
+  for (const [chave, pericia] of Object.entries(antes ?? {})) {
+    const esperado = pedido(chave) ?? pericia.atributo;
+    if (depois?.[chave] && depois[chave].atributo !== esperado) desfeitos[chave] = esperado;
+  }
+  return desfeitos;
+}
+
+// Envolve o Actor.update dos atores da Forja. O sistema 1.6.6 devolve "for" ao atributo de alguma perícia quando uma mesma
+// gravação mexe em várias (medido no Foundry: uma perícia por vez grava certo; o Ajustar ND grava Fortitude, Reflexos,
+// Vontade e Luta juntas). Depois de gravar, refaz o atributo desfeito, uma perícia por vez. `ehForja(ator)` diz se o ator é nosso.
+export function envolverUpdate(atualizar, { ehForja, aviso = () => {} }) {
+  return async function update(dados, contexto) {
+    if (!ehForja(this)) return atualizar.call(this, dados, contexto);
+    const antes = structuredClone(this._source.system?.pericias ?? {});
+    const gravar = (d) => atualizar.call(this, ...atualizacaoDePericias(this._source.system?.pericias, d, contexto));
+    const resultado = await gravar(dados);
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      const desfeitos = atributosDesfeitos(antes, this._source.system?.pericias, dados);
+      if (!Object.keys(desfeitos).length) break;
+      aviso(`refazendo o atributo de ${Object.keys(desfeitos).join(', ')}`);
+      for (const [chave, atributo] of Object.entries(desfeitos)) await gravar({ [`system.pericias.${chave}.atributo`]: atributo });
+    }
+    return resultado;
+  };
+}

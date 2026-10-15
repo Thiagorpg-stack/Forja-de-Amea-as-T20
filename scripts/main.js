@@ -1,7 +1,7 @@
 // Forja de Ameaças — ponto de entrada. Depende do módulo Ajustar ND (0.10.0 ou mais recente).
 import { ID_FORJA } from './forja/criar-ator.js';
 import { abrirForja } from './dialogo-forja.js';
-import { atualizacaoDePericias } from './forja/pericias.js';
+import { envolverUpdate } from './forja/pericias.js';
 
 // Botão no cabeçalho do diretório de atores (só para o Mestre).
 Hooks.on('renderActorDirectory', (_app, html) => {
@@ -20,15 +20,12 @@ Hooks.on('renderActorDirectory', (_app, html) => {
 });
 
 Hooks.once('ready', () => {
-  // Só nos atores criados por este módulo: completa as atualizações de perícia e desliga o diff (ver forja/pericias.js).
+  // Só nos atores criados por este módulo: mantém o atributo das perícias nas gravações (ver forja/pericias.js).
   const Ator = CONFIG.Actor.documentClass;
-  const atualizar = Ator.prototype.update;
-  Ator.prototype.update = function (dados, contexto) {
-    if (!this.getFlag(ID_FORJA, 'origem')) return atualizar.call(this, dados, contexto);
-    const [completos, opcoes] = atualizacaoDePericias(this._source.system?.pericias, dados, contexto);
-    if (opcoes?.diff === false) console.info(`${ID_FORJA} | update de perícias sem diff em ${this.name}`); // diagnóstico
-    return atualizar.call(this, completos, opcoes);
-  };
+  Ator.prototype.update = envolverUpdate(Ator.prototype.update, {
+    ehForja: (ator) => Boolean(ator.getFlag(ID_FORJA, 'origem')),
+    aviso: (texto) => console.info(`${ID_FORJA} | ${texto}`),
+  });
   game.modules.get(ID_FORJA).api = { versaoApi: 1, abrirForja };
   // Sem checar o Ajustar ND aqui: ele publica a API no próprio `ready`, que pode rodar depois deste.
   // abrirForja() confere na hora de abrir.
