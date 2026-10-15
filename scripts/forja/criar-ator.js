@@ -66,7 +66,10 @@ export function montarDadosAtor(ameaca, { gerarId, pasta = null, agora = new Dat
   dados.prototypeToken.height = casas;
 
   const armas = ameaca.ataques.map((ataque, indice) => {
-    const item = criarItemArma({ nome: ataque.nome, distancia: ataque.distancia, tipoDano: ataque.tipoDano, ataques: ataque.qtd });
+    const item = criarItemArma({
+      nome: ataque.nome, distancia: ataque.distancia, tipoDano: ataque.tipoDano, ataques: ataque.qtd,
+      danoExtra: ataque.danoExtra, descricao: ataque.descricao,
+    });
     item._id = gerarId();
     item.flags = { [ID_FORJA]: { indiceAtaque: indice } };
     return item;

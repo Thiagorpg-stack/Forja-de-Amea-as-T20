@@ -1,7 +1,7 @@
 // Diálogo "Forjar Ameaça" (adaptado do diálogo do 5e para T20): o mestre escolhe ND e papel, a ficha é completada
 // pelo Ajustar ND. Simula o ajuste num ator não salvo e só cria o ator quando o mestre confirma.
 import { obterApi } from './api-ajuste-nd.js';
-import { itemExtraDe } from './forja/itens-extras.js';
+import { itemExtraDe, ataqueDeArma } from './forja/itens-extras.js';
 import { ehUrl } from './forja/imagem.js';
 import { PREFIXO_IMAGEM, guardarImagem, trazerDaUrl } from './imagem-foundry.js';
 import { papelDoSistema, CODIGOS_TAMANHO, CODIGOS_TIPO, CHAVES_DANO, NDS } from './forja/mapeamentos.js';
@@ -33,6 +33,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       cancelar: DialogoForja.#cancelar,
       addAtaque: DialogoForja.#addAtaque,
       removerAtaque: DialogoForja.#removerAtaque,
+      addExtra: DialogoForja.#addExtra,
+      removerExtra: DialogoForja.#removerExtra,
       escolherImagem: DialogoForja.#escolherImagem,
       enviarImagem: DialogoForja.#enviarImagem,
       baixarImagem: DialogoForja.#baixarImagem,
@@ -52,7 +54,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       tamanho: 'med', tipo: 'mon', deslocamento: 9,
       atributos: Object.fromEntries(ATRIBUTOS.map((a) => [a, 0])),
       ordem: ['fort', 'refl', 'vont'],
-      ataques: [{ nome: 'Ataque', tipo: 'cac', dano: 'corte', qtd: 1 }],
+      ataques: [{ nome: 'Ataque', tipo: 'cac', dano: 'corte', qtd: 1, descricao: '', danoExtra: [] }],
     };
     this.pronto = null; // { dados, ameaca, opcoes }
     this.criando = false; // trava o clique duplo em "Criar"
@@ -78,8 +80,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   #erroLegivel(codigo) {
-    const ataque = /^ataque-(\d+)-nome$/.exec(codigo);
-    if (ataque) return `${t('T20FA.ErroAtaqueNome')} (${Number(ataque[1]) + 1})`;
+    const ataque = /^ataque-(\d+)-(nome|extra)$/.exec(codigo);
+    if (ataque) return `${t(ataque[2] === 'nome' ? 'T20FA.ErroAtaqueNome' : 'T20FA.ErroAtaqueExtra')} (${Number(ataque[1]) + 1})`;
     return t(`T20FA.Erro.${codigo}`);
   }
 
@@ -96,6 +98,10 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
         indice, nome: a.nome, qtd: a.qtd,
         tipos: [['cac', t('T20FA.CorpoACorpo')], ['ad', t('T20FA.ADistancia')]].map(([v, r]) => ({ valor: v, rotulo: r, selecionado: v === a.tipo })),
         danos: CHAVES_DANO.map((v) => ({ valor: v, rotulo: NOMES_DANO[v], selecionado: v === a.dano })),
+        extras: (a.danoExtra ?? []).map((x, j) => ({
+          indice: j, formula: x.formula,
+          danos: CHAVES_DANO.map((v) => ({ valor: v, rotulo: NOMES_DANO[v], selecionado: v === x.tipo })),
+        })),
       })),
       ordem: ['Forte', 'Média', 'Fraca'].map((rotulo, i) => ({
         indice: i, rotulo,
@@ -164,11 +170,17 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     ATRIBUTOS.forEach((a) => { e.atributos[a] = valor(`atributo-${a}`) ?? e.atributos[a]; });
     e.ordem = [0, 1, 2].map((i) => valor(`ordem-${i}`) ?? e.ordem[i]);
     // As linhas na tela espelham o estado, então lista vazia na tela é lista vazia no estado.
-    e.ataques = [...el.querySelectorAll('[data-ataque]')].map((linha) => ({
+    const anteriores = e.ataques; // a descrição (vem da arma arrastada) não tem campo na tela
+    e.ataques = [...el.querySelectorAll('[data-ataque]')].map((linha, i) => ({
       nome: linha.querySelector('[data-campo=nome]').value,
       tipo: linha.querySelector('[data-campo=tipo]').value,
       dano: linha.querySelector('[data-campo=dano]').value,
       qtd: linha.querySelector('[data-campo=qtd]').value,
+      descricao: anteriores[i]?.descricao ?? '',
+      danoExtra: [...linha.querySelectorAll('[data-extra]')].map((x) => ({
+        formula: x.querySelector('[data-campo-extra=formula]').value,
+        tipo: x.querySelector('[data-campo-extra=tipo]').value,
+      })),
     }));
   }
 
@@ -207,10 +219,13 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     const arrasto = leitor.getDragEventData(ev);
     if (arrasto?.type !== 'Item') return;
     const item = await fromUuid(arrasto.uuid);
-    const extra = item && itemExtraDe(item.toObject());
-    if (!extra) { ui.notifications.warn(game.i18n.format('T20FA.AvisoItemNaoSuportado', { tipo: item?.type ?? '?' })); return; }
+    const dados = item?.toObject();
+    const linha = ataqueDeArma(dados); // arma vira linha de ataque; poder e magia entram como item
+    const extra = itemExtraDe(dados);
+    if (!linha && !extra) { ui.notifications.warn(game.i18n.format('T20FA.AvisoItemNaoSuportado', { tipo: item?.type ?? '?' })); return; }
     this.#lerFormulario();
-    this.estado.itensExtras.push(extra);
+    if (linha) this.estado.ataques.push(linha);
+    else this.estado.itensExtras.push(extra);
     await this.render();
   }
 
@@ -218,7 +233,19 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static async #addAtaque() {
     this.#lerFormulario();
-    this.estado.ataques.push({ nome: '', tipo: 'cac', dano: 'corte', qtd: 1 });
+    this.estado.ataques.push({ nome: '', tipo: 'cac', dano: 'corte', qtd: 1, descricao: '', danoExtra: [] });
+    await this.render();
+  }
+
+  static async #addExtra(_ev, alvo) {
+    this.#lerFormulario();
+    this.estado.ataques[Number(alvo.dataset.indice)].danoExtra.push({ formula: '', tipo: 'dano' });
+    await this.render();
+  }
+
+  static async #removerExtra(_ev, alvo) {
+    this.#lerFormulario();
+    this.estado.ataques[Number(alvo.dataset.indice)].danoExtra.splice(Number(alvo.dataset.extra), 1);
     await this.render();
   }
 

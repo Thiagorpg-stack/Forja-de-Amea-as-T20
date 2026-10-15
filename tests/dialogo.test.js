@@ -121,11 +121,61 @@ test('soltar um poder na janela: entra em itensExtras e o diálogo se redesenha;
   assert.equal(d.desenhos, 1);
 });
 
-test('soltar arma, item que não abre ou algo que não é item: não entra; só os dois primeiros avisam', async () => {
-  const arma = dialogoComZona({ type: 'Item', uuid: 'U2' }, { U2: itemFalso('arma', 'Espada') });
-  await arma.soltar();
-  assert.deepEqual([arma.d.estado.itensExtras.length, arma.d.desenhos], [0, 0]);
-  assert.match(arma.avisos[0], /AvisoItemNaoSuportado.*arma/);
+test('soltar uma arma: vira linha de ataque (não item), com o dano extra, e o ator simulado leva a arma com o extra', async () => {
+  chamadas.length = 0;
+  const dadosArma = { type: 'arma', name: 'Espada Longa', system: { proposito: 'corpo-a-corpo', ataques: 2, description: { value: '' },
+    rolls: [{ type: 'dano', parts: [['2d5+8', 'corte', ''], ['', '', ''], ['2d6', 'eletricidade', '']] }] } };
+  const { d, avisos, soltar } = dialogoComZona({ type: 'Item', uuid: 'U4' }, { U4: { ...dadosArma, toObject: () => dadosArma } });
+  await soltar();
+  assert.deepEqual([d.estado.itensExtras.length, avisos.length, d.desenhos], [0, 0, 1]);
+  assert.deepEqual(d.estado.ataques.at(-1), { nome: 'Espada Longa', tipo: 'cac', dano: 'corte', qtd: 2, descricao: '', danoExtra: [{ formula: '2d6', tipo: 'eletricidade' }] });
+  await d._prepareContext();
+  const espada = chamadas[0].actor.dados.items.find((i) => i.name === 'Espada Longa');
+  assert.deepEqual(espada.system.rolls[1].parts.at(-1), ['2d6', 'eletricidade', '']);
+  assert.equal(espada.system.ataques, 2);
+});
+
+test('dano extra: "+ dano extra" e "remover" mexem só no ataque certo; o contexto lista os extras', async () => {
+  const d = novo();
+  d.render = async () => {};
+  // A tela espelha o estado: cada ataque vira uma linha cujos campos devolvem o que está no estado.
+  const campo = (valor) => ({ value: valor });
+  d.element = {
+    querySelector: () => null,
+    querySelectorAll: (seletor) => (seletor !== '[data-ataque]' ? [] : d.estado.ataques.map((a) => ({
+      querySelector: (s) => campo({ '[data-campo=nome]': a.nome, '[data-campo=tipo]': a.tipo, '[data-campo=dano]': a.dano, '[data-campo=qtd]': a.qtd }[s]),
+      querySelectorAll: () => a.danoExtra.map((x) => ({
+        querySelector: (s) => campo(s.includes('formula') ? x.formula : x.tipo),
+      })),
+    }))),
+  };
+  const linha = (nome) => ({ nome, tipo: 'cac', dano: 'corte', qtd: 1, descricao: '', danoExtra: [] });
+  d.estado.ataques = [linha('A'), linha('B')];
+  const { addExtra, removerExtra } = DialogoForja.DEFAULT_OPTIONS.actions;
+  await addExtra.call(d, null, { dataset: { indice: '1' } });
+  await addExtra.call(d, null, { dataset: { indice: '1' } });
+  d.estado.ataques[1].danoExtra[0].formula = '2d6';
+  assert.deepEqual(d.estado.ataques.map((a) => a.danoExtra.length), [0, 2]);
+  assert.deepEqual((await d._prepareContext()).ataques[1].extras.map((x) => x.formula), ['2d6', '']);
+  await removerExtra.call(d, null, { dataset: { indice: '1', extra: '0' } });
+  assert.deepEqual(d.estado.ataques[1].danoExtra.map((x) => x.formula), ['']);
+});
+
+test('fórmula de dano extra inválida aparece como erro legível e não chama a API', async () => {
+  chamadas.length = 0;
+  const d = novo();
+  d.tocado = true;
+  d.estado.ataques[0].danoExtra = [{ formula: 'abc', tipo: 'fogo' }];
+  const ctx = await d._prepareContext();
+  assert.deepEqual(ctx.erros, ['T20FA.ErroAtaqueExtra (1)']);
+  assert.equal(chamadas.length, 0);
+});
+
+test('soltar equipamento, item que não abre ou algo que não é item: não entra; só os dois primeiros avisam', async () => {
+  const equip = dialogoComZona({ type: 'Item', uuid: 'U2' }, { U2: itemFalso('equipamento', 'Escudo') });
+  await equip.soltar();
+  assert.deepEqual([equip.d.estado.itensExtras.length, equip.d.estado.ataques.length, equip.d.desenhos], [0, 1, 0]);
+  assert.match(equip.avisos[0], /AvisoItemNaoSuportado.*equipamento/);
   const sumido = dialogoComZona({ type: 'Item', uuid: 'U3' }, {});
   await sumido.soltar();
   assert.match(sumido.avisos[0], /AvisoItemNaoSuportado.*\?/);

@@ -99,7 +99,16 @@
       <select data-campo="tipo">{{#each tipos}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
       <select data-campo="dano">{{#each danos}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
       <input type="number" data-campo="qtd" value="{{qtd}}" min="1" title="{{localize 'T20FA.AtaqueQtd'}}">
+      <button type="button" data-action="addExtra" data-indice="{{indice}}" title="{{localize 'T20FA.DanoExtraDica'}}"><i class="fas fa-plus"></i> {{localize "T20FA.DanoExtra"}}</button>
       <button type="button" data-action="removerAtaque" data-indice="{{indice}}" title="{{localize 'T20FA.Remover'}}"><i class="fas fa-trash"></i></button>
+      {{#each extras}}
+      <div class="forja__extra" data-extra="{{indice}}">
+        <span>+</span>
+        <input type="text" data-campo-extra="formula" value="{{formula}}" size="8" placeholder="{{localize 'T20FA.DanoExtraFormula'}}">
+        <select data-campo-extra="tipo" title="{{localize 'T20FA.DanoAdicional'}}">{{#each danos}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
+        <button type="button" data-action="removerExtra" data-indice="{{../indice}}" data-extra="{{indice}}" title="{{localize 'T20FA.Remover'}}"><i class="fas fa-trash"></i></button>
+      </div>
+      {{/each}}
     </div>
     {{/each}}
     <button type="button" data-action="addAtaque"><i class="fas fa-plus"></i> {{localize "T20FA.AddAtaque"}}</button>

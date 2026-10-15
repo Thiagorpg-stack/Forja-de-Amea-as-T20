@@ -28,7 +28,7 @@ test('formulário válido vira ameaça neutra, com ND direto (sem CR nem ritmo)'
   assert.equal(a.nd, '7');
   assert.equal('cr' in a || 'ritmo' in a, false);
   assert.deepEqual(a.atributos, { for: 3, des: 2, con: 2, int: -4, sab: 1, car: -1 });
-  assert.deepEqual(a.ataques[0], { nome: 'Mordida', distancia: false, tipoDano: 'perfuracao', qtd: 2 });
+  assert.deepEqual(a.ataques[0], { nome: 'Mordida', distancia: false, tipoDano: 'perfuracao', qtd: 2, danoExtra: [], descricao: '' });
   assert.equal(a.ataques[1].distancia, true);
 });
 

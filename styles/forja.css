@@ -31,7 +31,8 @@
 .t20-forja-ameacas .forja__ataque select { flex: 0 0 auto; }
 .t20-forja-ameacas .forja__ataque input[data-campo=qtd] { flex: 0 0 4rem; width: 4rem; text-align: center; }
 .t20-forja-ameacas .forja__ataque button { flex: 0 0 auto; width: auto; }
-
+.t20-forja-ameacas .forja__extra { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.9em; }
+.t20-forja-ameacas .forja__extra button { flex: 0 0 auto; width: auto; }
 
 .t20-forja-ameacas .forja__marca { flex-direction: row !important; align-items: center; gap: 0.4rem !important; font-size: 1em !important; }
 .t20-forja-ameacas .forja__nota { margin: 0; font-size: 0.9em; }

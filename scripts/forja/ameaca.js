@@ -1,5 +1,5 @@
 // Valida o formulário e devolve a ameaça neutra. Função pura: os erros voltam como códigos, que o diálogo traduz.
-import { CODIGOS_TAMANHO, CODIGOS_TIPO, CHAVES_DANO, NDS } from './mapeamentos.js';
+import { CODIGOS_TAMANHO, CODIGOS_TIPO, CHAVES_DANO, NDS, FORMULA_DANO } from './mapeamentos.js';
 import { TIPOS_ITEM_EXTRA } from './itens-extras.js';
 
 export const ATRIBUTOS = ['for', 'des', 'con', 'int', 'sab', 'car'];
@@ -31,11 +31,21 @@ export function ameacaDeFormulario(f) {
   const ataques = (f.ataques ?? []).map((a, i) => {
     const nomeAtaque = String(a.nome ?? '').trim();
     if (!nomeAtaque) erros.push(`ataque-${i}-nome`);
+    // Dano extra fica fixo (o Ajustar ND o conta como dano existente). Linha em branco é ignorada; fórmula inválida é erro.
+    const danoExtra = [];
+    for (const d of a.danoExtra ?? []) {
+      const formula = String(d.formula ?? '').replace(/\s+/g, '');
+      if (!formula) continue;
+      if (FORMULA_DANO.test(formula)) danoExtra.push({ formula, tipo: CHAVES_DANO.includes(d.tipo) ? d.tipo : 'dano' });
+      else if (!erros.includes(`ataque-${i}-extra`)) erros.push(`ataque-${i}-extra`);
+    }
     return {
       nome: nomeAtaque,
       distancia: a.tipo === 'ad',
       tipoDano: CHAVES_DANO.includes(a.dano) ? a.dano : 'dano',
       qtd: Math.max(1, inteiro(a.qtd, 1)),
+      danoExtra,
+      descricao: String(a.descricao ?? '').trim(),
     };
   });
 

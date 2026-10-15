@@ -7,7 +7,9 @@ export const CHAVES_DANO = [
   'acido', 'corte', 'eletricidade', 'essencia', 'fogo', 'frio', 'impacto', 'luz',
   'psiquico', 'perfuracao', 'trevas', 'perda', 'dano',
 ];
-export const NDS = ['1/4', '1/2', ...Array.from({ length: 20 }, (_, i) => String(i + 1)), 'S', 'S+'];
+// Fórmula de dano aceita no dano extra ("2d6", "3d8+3").
+export const FORMULA_DANO = /^\d*d\d+(?:[+-]\d+)*$/;
+export const NDS =['1/4', '1/2', ...Array.from({ length: 20 }, (_, i) => String(i + 1)), 'S', 'S+'];
 
 // Mesma regra do Ajustar ND (tabelas.js): '1/4' = 0,25; '1/2' = 0,5; 'S' = 21; 'S+' = 22.
 export function valorND(nd) {

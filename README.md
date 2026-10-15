@@ -10,18 +10,20 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
    - **Identidade**: nome, conceito, retrato e token (caminho, URL, envio ou escolha no Foundry).
    - **ND e papel**: ND de `1/4` a `S+`, papel (Solo, Lacaio, Especial), template Chefe Final e a ordem das resistências (Forte, Média, Fraca).
    - **Ficha base**: tamanho, tipo, deslocamento, atributos e, se for conjurador, o atributo de conjuração (PM = 5 × ND).
-   - **Ataques**: nome, corpo a corpo ou distância, tipo de dano e quantidade por rodada.
-   - **Poderes e magias**: arraste do compêndio, de outra ficha ou do diretório de itens para qualquer lugar da janela.
+   - **Ataques**: nome, corpo a corpo ou distância, tipo de dano e quantidade por rodada. O botão **Dano extra** soma um dano fixo ao golpe (ex.: `2d6` de eletricidade na espada longa); o dano principal vem sempre da tabela.
+   - **Poderes, magias e armas**: arraste do compêndio, de outra ficha ou do diretório de itens para qualquer lugar da janela. Uma arma vira uma linha de ataque, já com o dano adicional dela.
 4. Confira a prévia (a ficha como ficará) e clique em **Criar ameaça**. O ator nasce na pasta "Forja de Ameaças".
 
 ## O que o módulo faz e não faz
 
 - Os poderes e magias arrastados entram **como estão**: o dano deles não é recalculado pelo ND, mas contam para o aviso de patamar.
-- Arma arrastada **não** é aceita nesta versão (prevista para a 0.2.0). Use as linhas de ataque.
+- Uma arma arrastada **não** é copiada: só nome, propósito, tipo de dano, quantidade, descrição e dano adicional viram a linha de ataque. Fórmula e bônus do dano principal saem da tabela.
+- O dano extra fica fixo e entra na conta da rodada: o Ajustar ND diminui o dano principal para o total bater com a tabela.
 - Os atributos não mudam o ND: os números finais vêm sempre da tabela.
 
 ## Versões
 
+- **0.2.0**: arrastar arma (vira linha de ataque) e dano extra por ataque.
 - **0.1.0**: primeira versão (criar ameaça por ND e papel, imagens por URL, arrastar poderes e magias).
 
 ## Desenvolvimento
