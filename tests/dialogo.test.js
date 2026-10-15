@@ -196,3 +196,67 @@ test('o item arrastado entra no ator simulado e "remover" tira pelo índice', as
   assert.deepEqual(d.estado.itensExtras.map((i) => i.name), ['B']);
   assert.equal((await d._prepareContext()).itensExtras[0].nome, 'B');
 });
+
+// Criar de ponta a ponta com um "sistema" que desfaz o atributo de Fortitude, Reflexos e Vontade (volta a "for") a cada
+// ajuste gravado: a criação precisa terminar com con/des/sab e com a última calibragem feita depois da correção.
+function mundoQueDesfazOAtributo({ desfazer }) {
+  const regras = { fort: 'con', refl: 'des', vont: 'sab', luta: 'for' };
+  const pericias = Object.fromEntries(Object.keys(regras).map((k) => [k, { atributo: 'for', outros: 0 }]));
+  const ator = {
+    id: 'a1', name: 'Lobão', sheet: { render() {} },
+    toObject: () => ({ system: { pericias: structuredClone(pericias) }, items: [] }),
+    update: async (dados) => { for (const [k, v] of Object.entries(dados.pericias ?? dados['system.pericias'] ?? {})) pericias[k] = structuredClone(v); },
+    delete: async () => {},
+  };
+  const gravacoes = [];
+  const api = {
+    ...ajusteNd.api,
+    aplicarAjuste: async () => { // o ajuste grava o outros e o sistema devolve "for" (só nas primeiras gravações)
+      gravacoes.push(Object.fromEntries(Object.entries(pericias).map(([k, p]) => [k, p.atributo])));
+      if (gravacoes.length <= desfazer) for (const k of ['fort', 'refl', 'vont']) pericias[k].atributo = 'for';
+    },
+  };
+  Object.assign(globalThis, {
+    CONFIG: { ...globalThis.CONFIG, T20: { pericias: Object.fromEntries(Object.entries(regras).map(([k, abl]) => [k, { abl }])) } },
+    Folder: { create: async () => ({ id: 'f1' }) },
+    Actor: { create: async () => ator },
+    ui: { notifications: { info() {}, warn() {}, error() {} } },
+  });
+  globalThis.game.folders = [];
+  return { ator, pericias, api, gravacoes };
+}
+
+test('criar: se o sistema desfaz o atributo durante o ajuste, termina com con/des/sab e faz a passada extra', async () => {
+  const cenario = mundoQueDesfazOAtributo({ desfazer: 2 }); // desfaz nas duas passadas normais
+  const original = ajusteNd.api;
+  ajusteNd.api = cenario.api;
+  try {
+    const d = novo();
+    d.element = { querySelector: () => null, querySelectorAll: () => [] };
+    d.render = async () => { await d._prepareContext(); };
+    d.close = async () => {};
+    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
+    assert.deepEqual([cenario.pericias.fort.atributo, cenario.pericias.refl.atributo, cenario.pericias.vont.atributo, cenario.pericias.luta.atributo], ['con', 'des', 'sab', 'for']);
+    assert.equal(cenario.gravacoes.length, 3); // duas passadas + a extra
+    assert.deepEqual(cenario.gravacoes.at(-1), { fort: 'con', refl: 'des', vont: 'sab', luta: 'for' }); // a última calibragem já viu o atributo certo
+  } finally {
+    ajusteNd.api = original;
+  }
+});
+
+test('criar: sem o problema, são só duas passadas', async () => {
+  const cenario = mundoQueDesfazOAtributo({ desfazer: 0 });
+  const original = ajusteNd.api;
+  ajusteNd.api = cenario.api;
+  try {
+    const d = novo();
+    d.element = { querySelector: () => null, querySelectorAll: () => [] };
+    d.render = async () => { await d._prepareContext(); };
+    d.close = async () => {};
+    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
+    assert.equal(cenario.gravacoes.length, 2);
+    assert.equal(cenario.pericias.fort.atributo, 'con');
+  } finally {
+    ajusteNd.api = original;
+  }
+});
