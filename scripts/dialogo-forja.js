@@ -311,6 +311,22 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     return errados.length > 0;
   }
 
+  // Diagnóstico (remover quando a causa for achada): o sistema 1.6.6 devolve "for" ao atributo de Fortitude, Reflexos e Vontade
+  // durante o ajuste. Registra o atributo antes e depois de cada operação que o Ajustar ND faz neste ator.
+  #vigiarAtributos(ator) {
+    const atributos = () => ['fort', 'refl', 'vont'].map((k) => ator.toObject().system.pericias[k]?.atributo).join('/');
+    for (const metodo of ['update', 'updateEmbeddedDocuments', 'createEmbeddedDocuments', 'deleteEmbeddedDocuments']) {
+      const original = ator[metodo];
+      if (typeof original !== 'function') continue;
+      ator[metodo] = async (...args) => {
+        const antes = atributos();
+        const resultado = await original.apply(ator, args);
+        console.info(`${ID_FORJA} | ${metodo}: atributo fort/refl/vont ${antes} -> ${atributos()}`);
+        return resultado;
+      };
+    }
+  }
+
   // Um segundo clique durante a criação (baixar imagens, duas passadas do Ajustar ND) criaria outro ator.
   static async #criar() {
     if (this.criando) return;
@@ -341,6 +357,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       const pasta = game.folders.find((f) => f.type === 'Actor' && f.name === NOME_PASTA)
         ?? await Folder.create({ name: NOME_PASTA, type: 'Actor' });
       ator = await Actor.create({ ...dados, folder: pasta.id });
+      this.#vigiarAtributos(ator);
       const ajustar = async () => {
         const resultado = await api.simular(ator, {
           ...opcoes, ataquesPorArma: ataquesPorArmaDe(ator.toObject().items, ameaca),

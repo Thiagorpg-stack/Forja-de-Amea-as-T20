@@ -25,7 +25,9 @@ Hooks.once('ready', () => {
   const atualizar = Ator.prototype.update;
   Ator.prototype.update = function (dados, contexto) {
     if (!this.getFlag(ID_FORJA, 'origem')) return atualizar.call(this, dados, contexto);
-    return atualizar.call(this, ...atualizacaoDePericias(this._source.system?.pericias, dados, contexto));
+    const [completos, opcoes] = atualizacaoDePericias(this._source.system?.pericias, dados, contexto);
+    if (opcoes?.diff === false) console.info(`${ID_FORJA} | update de perícias sem diff em ${this.name}`); // diagnóstico
+    return atualizar.call(this, completos, opcoes);
   };
   game.modules.get(ID_FORJA).api = { versaoApi: 1, abrirForja };
   // Sem checar o Ajustar ND aqui: ele publica a API no próprio `ready`, que pode rodar depois deste.
