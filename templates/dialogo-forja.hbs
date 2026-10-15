@@ -1,0 +1,146 @@
+<section class="forja">
+  <fieldset>
+    <legend>{{localize "T20FA.SecaoIdentidade"}}</legend>
+    <label>{{localize "T20FA.Nome"}}
+      <input type="text" name="nome" value="{{e.nome}}" placeholder="{{localize 'T20FA.NomeDica'}}">
+    </label>
+    <label title="{{localize 'T20FA.ConceitoDica'}}">{{localize "T20FA.Conceito"}}
+      <textarea name="conceito" rows="2">{{e.conceito}}</textarea>
+    </label>
+    <div class="forja__linha">
+      <div class="forja__campo">
+        <span>{{localize "T20FA.Retrato"}}</span>
+        <div class="forja__arquivo">
+          <input type="text" name="img" value="{{e.img}}" placeholder="{{localize 'T20FA.ImagemDica'}}">
+          <button type="button" data-action="escolherImagem" data-campo="img" title="{{localize 'T20FA.Escolher'}}"><i class="fas fa-folder-open"></i></button>
+          <button type="button" data-action="enviarImagem" data-campo="img" title="{{localize 'T20FA.Enviar'}}"><i class="fas fa-upload"></i></button>
+          <button type="button" data-action="baixarImagem" data-campo="img" title="{{localize 'T20FA.Baixar'}}"><i class="fas fa-cloud-arrow-down"></i></button>
+          <input type="file" accept="image/*" data-enviar="img" hidden>
+        </div>
+      </div>
+      <div class="forja__campo">
+        <span>{{localize "T20FA.Token"}}</span>
+        <div class="forja__arquivo">
+          <input type="text" name="token" value="{{e.token}}" placeholder="{{localize 'T20FA.TokenDica'}}">
+          <button type="button" data-action="escolherImagem" data-campo="token" title="{{localize 'T20FA.Escolher'}}"><i class="fas fa-folder-open"></i></button>
+          <button type="button" data-action="enviarImagem" data-campo="token" title="{{localize 'T20FA.Enviar'}}"><i class="fas fa-upload"></i></button>
+          <button type="button" data-action="baixarImagem" data-campo="token" title="{{localize 'T20FA.Baixar'}}"><i class="fas fa-cloud-arrow-down"></i></button>
+          <input type="file" accept="image/*" data-enviar="token" hidden>
+        </div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "T20FA.SecaoND"}}</legend>
+    <p class="forja__nota">{{localize "T20FA.NotaND"}}</p>
+    <div class="forja__linha">
+      <label>{{localize "T20FA.ND"}}
+        <select name="nd">{{#each nds}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{valor}}</option>{{/each}}</select>
+      </label>
+      <label>{{localize "T20FA.Papel"}}
+        <select name="papel">{{#each papeis}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
+      </label>
+    </div>
+    <label class="forja__marca">
+      <input type="checkbox" name="chefeFinal" {{#if e.chefeFinal}}checked{{/if}}>
+      {{localize "T20FA.ChefeFinal"}}
+    </label>
+    <div class="forja__linha">
+      <span>{{localize "T20FA.Resistencias"}}:</span>
+      {{#each ordem}}
+      <label>{{rotulo}}
+        <select name="ordem-{{indice}}">{{#each opcoes}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{nome}}</option>{{/each}}</select>
+      </label>
+      {{/each}}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "T20FA.SecaoFicha"}}</legend>
+    <p class="forja__nota">{{localize "T20FA.NotaFicha"}}</p>
+    <div class="forja__linha">
+      <label>{{localize "T20FA.Tamanho"}}
+        <select name="tamanho">{{#each tamanhos}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
+      </label>
+      <label>{{localize "T20FA.Tipo"}}
+        <select name="tipo">{{#each tipos}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
+      </label>
+      <label>{{localize "T20FA.Deslocamento"}}
+        <input type="number" name="deslocamento" value="{{e.deslocamento}}" min="0" step="1.5">
+      </label>
+    </div>
+    <div class="forja__linha forja__atributos">
+      {{#each atributos}}
+      <label>{{rotulo}}
+        <input type="number" name="atributo-{{chave}}" value="{{valor}}" min="-10" max="30">
+      </label>
+      {{/each}}
+    </div>
+    <div class="forja__linha">
+      <label class="forja__marca" title="{{localize 'T20FA.ConjuradorDica'}}">
+        <input type="checkbox" name="conjurador" {{#if e.conjurador}}checked{{/if}}>
+        {{localize "T20FA.Conjurador"}}
+      </label>
+      <label>{{localize "T20FA.Conjuracao"}}
+        <select name="conjuracao">{{#each conjuracoes}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>{{localize "T20FA.SecaoAtaques"}}</legend>
+    {{#if limiteAtaques}}
+    <p class="forja__nota">{{localize "T20FA.TotalAtaques"}}: <strong>{{totalAtaques}}</strong> · {{localize "T20FA.LimiteND"}}: <strong>{{limiteAtaques}}</strong></p>
+    {{/if}}
+    {{#each ataques}}
+    <div class="forja__linha forja__ataque" data-ataque="{{indice}}">
+      <input type="text" data-campo="nome" value="{{nome}}" placeholder="{{localize 'T20FA.AtaqueNome'}}">
+      <select data-campo="tipo">{{#each tipos}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
+      <select data-campo="dano">{{#each danos}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{rotulo}}</option>{{/each}}</select>
+      <input type="number" data-campo="qtd" value="{{qtd}}" min="1" title="{{localize 'T20FA.AtaqueQtd'}}">
+      <button type="button" data-action="removerAtaque" data-indice="{{indice}}" title="{{localize 'T20FA.Remover'}}"><i class="fas fa-trash"></i></button>
+    </div>
+    {{/each}}
+    <button type="button" data-action="addAtaque"><i class="fas fa-plus"></i> {{localize "T20FA.AddAtaque"}}</button>
+  </fieldset>
+
+  <fieldset class="forja__itens">
+    <legend>{{localize "T20FA.SecaoItensExtras"}}</legend>
+    <p class="forja__nota">{{localize "T20FA.ItensExtrasDica"}}</p>
+    {{#each itensExtras}}
+    <div class="forja__linha forja__item">
+      <img src="{{img}}" alt="" width="24" height="24">
+      <span class="forja__largo">{{nome}} <em>({{tipo}})</em></span>
+      <button type="button" data-action="removerItemExtra" data-indice="{{indice}}" title="{{localize 'T20FA.Remover'}}"><i class="fas fa-trash"></i></button>
+    </div>
+    {{/each}}
+  </fieldset>
+
+  {{#if erros.length}}
+  <div class="forja__erros"><ul>{{#each erros}}<li>{{this}}</li>{{/each}}</ul></div>
+  {{/if}}
+
+  {{#if previa}}
+  <fieldset class="forja__previa">
+    <legend>{{localize "T20FA.SecaoPrevia"}}</legend>
+    <table>
+      <tbody>
+        {{#each previa.linhas}}<tr><th>{{rotulo}}</th><td>{{valor}}</td></tr>{{/each}}
+      </tbody>
+    </table>
+    {{#if previa.armas.length}}
+    <p><strong>{{localize "T20FA.DanoPorGolpe"}}</strong> ({{localize "T20FA.AlvoRodada"}}: {{previa.danoAlvo}})</p>
+    <ul>{{#each previa.armas}}<li>{{nome}} × {{qtd}}: <code>{{formula}}</code></li>{{/each}}</ul>
+    {{/if}}
+    {{#if previa.avisos.length}}<div class="forja__avisos"><strong>{{localize "T20FA.Avisos"}}</strong><ul>{{#each previa.avisos}}<li>{{this}}</li>{{/each}}</ul></div>{{/if}}
+    {{#if previa.patamar.length}}<div class="forja__avisos"><strong>{{localize "T20FA.Patamar"}}</strong><ul>{{#each previa.patamar}}<li>{{this}}</li>{{/each}}</ul></div>{{/if}}
+    {{#if previa.revisar.length}}<div class="forja__avisos"><strong>{{localize "T20FA.Revisar"}}</strong><ul>{{#each previa.revisar}}<li>{{this}}</li>{{/each}}</ul></div>{{/if}}
+  </fieldset>
+  {{/if}}
+
+  <footer class="forja__rodape">
+    <button type="button" data-action="cancelar">{{localize "T20FA.Cancelar"}}</button>
+    <button type="button" data-action="criar" {{#unless previa}}disabled{{/unless}}><i class="fas fa-hammer"></i> {{localize "T20FA.Criar"}}</button>
+  </footer>
+</section>

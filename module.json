@@ -1,0 +1,59 @@
+{
+  "id": "t20-forja-ameacas",
+  "title": "Forja de Ameaças",
+  "description": "Cria ameaças de Tormenta20 a partir do ND e do papel, usando as tabelas do Ajustar ND. / Threat creator for Tormenta20 based on the ND tables.",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Thiago Cardim",
+      "url": "https://foundryvtt.com/community/cadimrpg"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14.369"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "tormenta20",
+        "type": "system",
+        "compatibility": {
+          "minimum": "1.5.0"
+        }
+      }
+    ],
+    "requires": [
+      {
+        "id": "tormenta20-ajuste-nd",
+        "type": "module",
+        "compatibility": {
+          "minimum": "0.10.0"
+        }
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/forja.css"
+  ],
+  "languages": [
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR.json"
+    },
+    {
+      "lang": "en",
+      "name": "English (textos em português)",
+      "path": "lang/pt-BR.json"
+    }
+  ],
+  "url": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20",
+  "bugs": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20/issues",
+  "manifest": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20/releases/latest/download/module.json",
+  "download": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20/releases/download/v0.1.0/module.zip",
+  "license": "MIT"
+}

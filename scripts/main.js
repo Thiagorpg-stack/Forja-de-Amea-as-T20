@@ -1,0 +1,33 @@
+// Forja de Ameaças — ponto de entrada. Depende do módulo Ajustar ND (0.10.0 ou mais recente).
+import { ID_FORJA } from './forja/criar-ator.js';
+import { abrirForja } from './dialogo-forja.js';
+import { completarPericiasParciais } from './forja/pericias.js';
+
+// Botão no cabeçalho do diretório de atores (só para o Mestre).
+Hooks.on('renderActorDirectory', (_app, html) => {
+  if (!game.user.isGM) return;
+  const raiz = html instanceof HTMLElement ? html : html[0];
+  if (!raiz || raiz.querySelector('.t20fa-botao')) return;
+  const alvo = raiz.querySelector('.header-actions') ?? raiz.querySelector('.directory-header');
+  if (!alvo) return;
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  // Herda as classes dos botões vizinhos para ficar com o mesmo visual do diretório.
+  botao.className = `${alvo.querySelector('button')?.className ?? ''} t20fa-botao`.trim();
+  botao.innerHTML = `<i class="fas fa-hammer"></i> ${game.i18n.localize('T20FA.Botao')}`;
+  botao.addEventListener('click', () => abrirForja());
+  alvo.append(botao);
+});
+
+Hooks.once('ready', () => {
+  // Só nos atores criados por este módulo: completa as atualizações parciais de perícia (ver forja/pericias.js).
+  const Ator = CONFIG.Actor.documentClass;
+  const atualizar = Ator.prototype.update;
+  Ator.prototype.update = function (dados, contexto) {
+    const completos = this.getFlag(ID_FORJA, 'origem') ? completarPericiasParciais(this._source.system?.pericias, dados) : dados;
+    return atualizar.call(this, completos, contexto);
+  };
+  game.modules.get(ID_FORJA).api = { versaoApi: 1, abrirForja };
+  // Sem checar o Ajustar ND aqui: ele publica a API no próprio `ready`, que pode rodar depois deste.
+  // abrirForja() confere na hora de abrir.
+});
