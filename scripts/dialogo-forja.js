@@ -296,21 +296,6 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     await this.close();
   }
 
-  // Atributo de cada perícia = o da regra (Fortitude = Constituição...). Grava o system.pericias inteiro: o sistema Tormenta20
-  // preenche com os valores padrão (atributo "for", outros 0) o que falta numa perícia atualizada por caminho parcial.
-  // Devolve true quando precisou corrigir algum atributo. O log mostra a etapa em que o sistema (1.6.6) devolve "for"
-  // a Fortitude, Reflexos e Vontade, que é o que o ator criado antes mostrava.
-  async #normalizarPericias(ator, etapa) {
-    const pericias = ator.toObject().system.pericias;
-    const errados = [];
-    for (const [chave, regra] of Object.entries(CONFIG.T20.pericias)) {
-      if (pericias[chave] && regra.abl && pericias[chave].atributo !== regra.abl) { errados.push(chave); pericias[chave].atributo = regra.abl; }
-    }
-    console.info(`${ID_FORJA} | atributo das perícias (${etapa}): ${errados.length ? `corrigindo ${errados.join(', ')}` : 'ok'}`);
-    if (errados.length) await ator.update({ 'system.pericias': pericias });
-    return errados.length > 0;
-  }
-
   // Um segundo clique durante a criação (baixar imagens, duas passadas do Ajustar ND) criaria outro ator.
   static async #criar() {
     if (this.criando) return;
@@ -340,24 +325,13 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       const api = obterApi();
       const pasta = game.folders.find((f) => f.type === 'Actor' && f.name === NOME_PASTA)
         ?? await Folder.create({ name: NOME_PASTA, type: 'Actor' });
-      ator = await Actor.create({ ...dados, folder: pasta.id });
-      const ajustar = async () => {
-        const resultado = await api.simular(ator, {
-          ...opcoes, ataquesPorArma: ataquesPorArmaDe(ator.toObject().items, ameaca),
-        });
-        await api.aplicarAjuste(ator, resultado, { copiar: false });
-      };
-      // Duas passadas: a segunda calibra de novo sobre o ator como ele ficou, para o que a ficha mostra bater com a tabela.
-      // O atributo é conferido antes de cada uma (o total depende dele) e de novo no fim: se o sistema o desfez durante
-      // o ajuste, uma passada extra calibra com o atributo certo.
-      for (let passada = 1; passada <= 2; passada++) {
-        await this.#normalizarPericias(ator, `antes da passada ${passada}`);
-        await ajustar();
-      }
-      if (await this.#normalizarPericias(ator, 'depois das passadas')) {
-        await ajustar();
-        await this.#normalizarPericias(ator, 'depois da passada extra');
-      }
+      // O ator nasce já ajustado. Medido no Foundry 14 com o Tormenta20 1.6.6: atualizar as perícias de um ator que já existe
+      // devolve "for" ao atributo de Fortitude, Reflexos e Vontade, e criar não. Por isso o Ajustar ND roda sobre um ator ainda
+      // não salvo e `copiar: true` cria o ator final com tudo gravado, sem atualizar perícia depois.
+      const rascunho = new CONFIG.Actor.documentClass({ ...dados, folder: pasta.id });
+      const resultado = await api.simular(rascunho, { ...opcoes, ataquesPorArma: ataquesPorArmaDe(rascunho.toObject().items, ameaca) });
+      ator = await api.aplicarAjuste(rascunho, resultado, { copiar: true });
+      if (ator.name !== ameaca.nome) await ator.update({ name: ameaca.nome }); // a cópia vem com o sufixo "(ND 5)"
     } catch (erro) {
       console.error(`${ID_FORJA} |`, erro);
       if (ator) await ator.delete().catch(() => {});

@@ -23,10 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
-- **0.2.5**: refaz, uma perícia por vez, o atributo que o sistema desfaz quando uma gravação mexe em várias perícias (medido no Foundry); tira o diagnóstico da 0.2.4.
-- **0.2.4**: diagnóstico no console (substituído pela 0.2.5).
-- **0.2.3**: grava as perícias sem o diff do Foundry nos atores da Forja, para o sistema não devolver "for" ao atributo de Fortitude, Reflexos e Vontade (causa confirmada pelo console).
-- **0.2.2**: confere o atributo de Fortitude, Reflexos e Vontade antes de cada ajuste e no fim (calibra de novo se o sistema o desfez) e registra cada etapa no console.
+- **0.2.6**: o ator é criado já ajustado (o Ajustar ND roda sobre um ator ainda não salvo e cria o final), porque atualizar as perícias de um ator existente devolve "for" ao atributo de Fortitude, Reflexos e Vontade (medido no Foundry 14 com o Tormenta20 1.6.6).
 - **0.2.1**: corrige o botão Criar ameaça, que falhava quando o formulário era lido (erro `null.value`).
 - **0.2.0**: arrastar arma (vira linha de ataque) e dano extra por ataque.
 - **0.1.0**: primeira versão (criar ameaça por ND e papel, imagens por URL, arrastar poderes e magias).

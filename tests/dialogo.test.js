@@ -197,66 +197,69 @@ test('o item arrastado entra no ator simulado e "remover" tira pelo índice', as
   assert.equal((await d._prepareContext()).itensExtras[0].nome, 'B');
 });
 
-// Criar de ponta a ponta com um "sistema" que desfaz o atributo de Fortitude, Reflexos e Vontade (volta a "for") a cada
-// ajuste gravado: a criação precisa terminar com con/des/sab e com a última calibragem feita depois da correção.
-function mundoQueDesfazOAtributo({ desfazer }) {
-  const regras = { fort: 'con', refl: 'des', vont: 'sab', luta: 'for' };
-  const pericias = Object.fromEntries(Object.keys(regras).map((k) => [k, { atributo: 'for', outros: 0 }]));
+// Criar de ponta a ponta com o Foundry simulado: o ator final é criado já ajustado pelo Ajustar ND (copiar: true), sem
+// nenhuma atualização de perícia depois (atualizar perícias devolve "for" ao atributo no Tormenta20 1.6.6).
+function mundoDeCriacao({ nomeDaCopia = 'Lobo Gigante (ND 5)', falhaNoNome = false } = {}) {
+  const simularDoMock = ajusteNd.api.simular; // o mock é trocado durante a criação: guardar o original evita recursão
+  const registro = { simulacoes: [], aplicouCom: null, atualizacoes: [], apagou: false };
   const ator = {
-    id: 'a1', name: 'Lobão', sheet: { render() {} },
-    toObject: () => ({ system: { pericias: structuredClone(pericias) }, items: [] }),
-    update: async (dados) => { for (const [k, v] of Object.entries(dados.pericias ?? dados['system.pericias'] ?? {})) pericias[k] = structuredClone(v); },
-    delete: async () => {},
+    name: nomeDaCopia, sheet: { render() {} },
+    update: async (d) => { registro.atualizacoes.push(d); if (falhaNoNome) throw new Error('falhou'); },
+    delete: async () => { registro.apagou = true; },
   };
-  const gravacoes = [];
   const api = {
     ...ajusteNd.api,
-    aplicarAjuste: async () => { // o ajuste grava o outros e o sistema devolve "for" (só nas primeiras gravações)
-      gravacoes.push(Object.fromEntries(Object.entries(pericias).map(([k, p]) => [k, p.atributo])));
-      if (gravacoes.length <= desfazer) for (const k of ['fort', 'refl', 'vont']) pericias[k].atributo = 'for';
-    },
+    // a prévia também simula; a última simulação é a da criação
+    simular: async (rascunho, opcoes) => { registro.simulacoes.push({ rascunho, opcoes }); return simularDoMock(rascunho, opcoes); },
+    aplicarAjuste: async (rascunho, resultado, opcoes) => { registro.aplicouCom = { rascunho, resultado, opcoes }; return ator; },
   };
   Object.assign(globalThis, {
-    CONFIG: { ...globalThis.CONFIG, T20: { pericias: Object.fromEntries(Object.entries(regras).map(([k, abl]) => [k, { abl }])) } },
     Folder: { create: async () => ({ id: 'f1' }) },
-    Actor: { create: async () => ator },
+    Actor: { create: async () => { throw new Error('não deve criar o ator antes do ajuste'); } },
     ui: { notifications: { info() {}, warn() {}, error() {} } },
   });
   globalThis.game.folders = [];
-  return { ator, pericias, api, gravacoes };
+  return { registro, api };
 }
 
-test('criar: se o sistema desfaz o atributo durante o ajuste, termina com con/des/sab e faz a passada extra', async () => {
-  const cenario = mundoQueDesfazOAtributo({ desfazer: 2 }); // desfaz nas duas passadas normais
+async function criarComMundo(mundo) {
   const original = ajusteNd.api;
-  ajusteNd.api = cenario.api;
+  ajusteNd.api = mundo.api;
   try {
     const d = novo();
     d.element = { querySelector: () => null, querySelectorAll: () => [] };
     d.render = async () => { await d._prepareContext(); };
     d.close = async () => {};
     await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
-    assert.deepEqual([cenario.pericias.fort.atributo, cenario.pericias.refl.atributo, cenario.pericias.vont.atributo, cenario.pericias.luta.atributo], ['con', 'des', 'sab', 'for']);
-    assert.equal(cenario.gravacoes.length, 3); // duas passadas + a extra
-    assert.deepEqual(cenario.gravacoes.at(-1), { fort: 'con', refl: 'des', vont: 'sab', luta: 'for' }); // a última calibragem já viu o atributo certo
   } finally {
     ajusteNd.api = original;
   }
+}
+
+test('criar: ajusta um ator ainda não salvo e cria o ator final já ajustado (copiar: true), com a pasta e o nome certos', async () => {
+  const mundo = mundoDeCriacao();
+  await criarComMundo(mundo);
+  const { simulacoes, aplicouCom, atualizacoes, apagou } = mundo.registro;
+  const simulouCom = simulacoes.at(-1);
+  assert.equal(simulouCom.rascunho.dados.folder, 'f1');                       // o rascunho já vai para a pasta da Forja
+  assert.equal(simulouCom.opcoes.nd, '5');
+  assert.equal(aplicouCom.rascunho, simulouCom.rascunho);                     // o mesmo ator não salvo
+  assert.deepEqual(aplicouCom.opcoes, { copiar: true });                      // cria em vez de atualizar
+  assert.deepEqual(atualizacoes, [{ name: 'Lobo Gigante' }]);                 // só o nome volta ao digitado: nenhuma perícia é atualizada
+  assert.equal(apagou, false);
 });
 
-test('criar: sem o problema, são só duas passadas', async () => {
-  const cenario = mundoQueDesfazOAtributo({ desfazer: 0 });
-  const original = ajusteNd.api;
-  ajusteNd.api = cenario.api;
-  try {
-    const d = novo();
-    d.element = { querySelector: () => null, querySelectorAll: () => [] };
-    d.render = async () => { await d._prepareContext(); };
-    d.close = async () => {};
-    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
-    assert.equal(cenario.gravacoes.length, 2);
-    assert.equal(cenario.pericias.fort.atributo, 'con');
-  } finally {
-    ajusteNd.api = original;
-  }
+test('criar: se a cópia já vem com o nome certo, não atualiza nada; se o ajuste falha, nenhum ator fica pela metade', async () => {
+  const certo = mundoDeCriacao({ nomeDaCopia: 'Lobo Gigante' });
+  await criarComMundo(certo);
+  assert.deepEqual(certo.registro.atualizacoes, []);
+
+  const falha = mundoDeCriacao();
+  falha.api.aplicarAjuste = async () => { throw new Error('ajuste falhou'); };
+  await criarComMundo(falha);
+  assert.equal(falha.registro.apagou, false); // nada foi criado, nada a apagar
+
+  const renomeia = mundoDeCriacao({ falhaNoNome: true });
+  await criarComMundo(renomeia);
+  assert.equal(renomeia.registro.apagou, true); // criou e falhou depois: apaga o ator
 });
