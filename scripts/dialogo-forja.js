@@ -177,7 +177,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       dano: linha.querySelector('[data-campo=dano]').value,
       qtd: linha.querySelector('[data-campo=qtd]').value,
       descricao: anteriores[i]?.descricao ?? '',
-      danoExtra: [...linha.querySelectorAll('[data-extra]')].map((x) => ({
+      danoExtra: [...linha.querySelectorAll('.forja__extra')].map((x) => ({ // não por [data-extra]: o botão remover também o tem
         formula: x.querySelector('[data-campo-extra=formula]').value,
         tipo: x.querySelector('[data-campo-extra=tipo]').value,
       })),

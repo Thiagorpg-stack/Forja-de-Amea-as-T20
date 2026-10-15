@@ -144,9 +144,9 @@ test('dano extra: "+ dano extra" e "remover" mexem só no ataque certo; o contex
     querySelector: () => null,
     querySelectorAll: (seletor) => (seletor !== '[data-ataque]' ? [] : d.estado.ataques.map((a) => ({
       querySelector: (s) => campo({ '[data-campo=nome]': a.nome, '[data-campo=tipo]': a.tipo, '[data-campo=dano]': a.dano, '[data-campo=qtd]': a.qtd }[s]),
-      querySelectorAll: () => a.danoExtra.map((x) => ({
+      querySelectorAll: (s) => (s !== '.forja__extra' ? [] : a.danoExtra.map((x) => ({
         querySelector: (s) => campo(s.includes('formula') ? x.formula : x.tipo),
-      })),
+      }))),
     }))),
   };
   const linha = (nome) => ({ nome, tipo: 'cac', dano: 'corte', qtd: 1, descricao: '', danoExtra: [] });

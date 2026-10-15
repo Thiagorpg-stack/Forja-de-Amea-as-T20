@@ -23,6 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **0.2.1**: corrige o botão Criar ameaça, que falhava quando o formulário era lido (erro `null.value`).
 - **0.2.0**: arrastar arma (vira linha de ataque) e dano extra por ataque.
 - **0.1.0**: primeira versão (criar ameaça por ND e papel, imagens por URL, arrastar poderes e magias).
 
