@@ -1,4 +1,4 @@
-// Portado de t20-conversor-5e (2026-10-15), sem mudanças.
+// Portado de t20-conversor-5e (2026-10-15); `atualizacaoDePericias` é novo da Forja.
 // O sistema Tormenta20 1.6.6 (Foundry 14) preenche com o padrão ("for", outros 0...) o que falta numa perícia atualizada
 // por caminho parcial, e o envio do formulário da ficha ao fechá-la faz isso. Completa a atualização com os valores atuais
 // de cada perícia tocada, antes de o Foundry limpar os dados. Função pura; `atuais` = _source.system.pericias.
@@ -33,4 +33,14 @@ export function completarPericiasParciais(atuais, dados) {
     resultado.system = { ...dados.system, pericias };
   }
   return resultado;
+}
+
+// Quem grava as perícias (o Ajustar ND) manda o system.pericias inteiro, mas o Foundry reduz a gravação ao que mudou
+// ("outros" de Fortitude, por exemplo) e o sistema preenche com "for" o atributo que falta: Fortitude, Reflexos e Vontade
+// saíam com FOR (confirmado no console: toda gravação do ajuste desfazia o atributo). Com `diff: false` o sistema recebe
+// cada perícia completa. Devolve [dados, contexto] prontos para o Actor.update; só mexe em atualização que toca as perícias.
+export function atualizacaoDePericias(atuais, dados, contexto) {
+  const tocaPericias = Boolean(dados) && (Object.keys(dados).some((k) => k.startsWith('system.pericias')) || dados.system?.pericias);
+  if (!tocaPericias) return [dados, contexto];
+  return [completarPericiasParciais(atuais, dados), { ...contexto, diff: false }];
 }

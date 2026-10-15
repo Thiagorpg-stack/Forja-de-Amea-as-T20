@@ -23,6 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **0.2.3**: grava as perícias sem o diff do Foundry nos atores da Forja, para o sistema não devolver "for" ao atributo de Fortitude, Reflexos e Vontade (causa confirmada pelo console).
 - **0.2.2**: confere o atributo de Fortitude, Reflexos e Vontade antes de cada ajuste e no fim (calibra de novo se o sistema o desfez) e registra cada etapa no console.
 - **0.2.1**: corrige o botão Criar ameaça, que falhava quando o formulário era lido (erro `null.value`).
 - **0.2.0**: arrastar arma (vira linha de ataque) e dano extra por ataque.

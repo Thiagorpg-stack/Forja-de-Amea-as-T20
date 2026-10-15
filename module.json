@@ -2,7 +2,7 @@
   "id": "t20-forja-ameacas",
   "title": "Forja de Ameaças",
   "description": "Cria ameaças de Tormenta20 a partir do ND e do papel, usando as tabelas do Ajustar ND. / Threat creator for Tormenta20 based on the ND tables.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "authors": [
     {
       "name": "Thiago Cardim",
@@ -54,6 +54,6 @@
   "url": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20",
   "bugs": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20/issues",
   "manifest": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20/releases/latest/download/module.json",
-  "download": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20/releases/download/v0.2.2/module.zip",
+  "download": "https://github.com/Thiagorpg-stack/Forja-de-Amea-as-T20/releases/download/v0.2.3/module.zip",
   "license": "MIT"
 }
