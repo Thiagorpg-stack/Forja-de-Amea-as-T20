@@ -68,16 +68,48 @@ test('papel Lacaio e Chefe Final vão para a API com os códigos do sistema', as
   assert.deepEqual(chamadas[0].opcoes.templates, { chefeFinal: true });
 });
 
-test('formulário inválido mostra os erros só depois da primeira edição e não chama a API', async () => {
+test('sem o nome a prévia já aparece (com nome provisório), o erro só depois da primeira edição, e o Criar fica desabilitado', async () => {
   chamadas.length = 0;
   const d = novo({ nome: '' });
-  assert.deepEqual((await d._prepareContext()).erros, []);   // recém-aberto: sem erro à vista
-  d.tocado = true;
-  const ctx = await d._prepareContext();
+  let ctx = await d._prepareContext();
+  assert.deepEqual(ctx.erros, []);                    // recém-aberto: sem erro à vista
+  assert.ok(ctx.previa);                              // mas a prévia e as opções dos poderes já valem
+  assert.equal(chamadas[0].actor.dados.name, 'T20FA.SemNome');
+  assert.deepEqual([ctx.podeCriar, d.pronto], [false, null]);
+  d.tocado = true;                                    // depois da primeira edição
+  ctx = await d._prepareContext();
   assert.deepEqual(ctx.erros, ['T20FA.Erro.nome']);
-  assert.equal(ctx.previa, null);
-  assert.equal(chamadas.length, 0);
-  assert.equal(d.pronto, null);
+  assert.ok(ctx.previa);
+  assert.deepEqual([ctx.podeCriar, d.pronto], [false, null]);
+  d.estado.nome = 'Lobo';
+  ctx = await d._prepareContext();
+  assert.deepEqual([ctx.erros, ctx.podeCriar, d.pronto !== null], [[], true, true]);
+});
+
+test('outro erro (ataque sem nome) além do nome continua sem prévia e sem chamar a API', async () => {
+  chamadas.length = 0;
+  const d = novo({ nome: '' });
+  d.tocado = true;
+  d.estado.ataques[0].nome = '';
+  const ctx = await d._prepareContext();
+  assert.deepEqual(ctx.erros, ['T20FA.Erro.nome', 'T20FA.ErroAtaqueNome (1)']);
+  assert.deepEqual([ctx.previa, ctx.podeCriar, chamadas.length], [null, false, 0]);
+});
+
+test('clicar em Criar sem nome não cria nada', async () => {
+  const mundo = mundoDeCriacao();
+  const original = ajusteNd.api;
+  ajusteNd.api = mundo.api;
+  try {
+    const d = novo({ nome: '' });
+    d.element = { querySelector: () => null, querySelectorAll: () => [] };
+    d.render = async () => { await d._prepareContext(); };
+    d.close = async () => {};
+    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
+    assert.equal(mundo.registro.aplicouCom, null);
+  } finally {
+    ajusteNd.api = original;
+  }
 });
 
 test('Ajustar ND ausente ou antigo gera mensagem clara', async () => {

@@ -68,7 +68,10 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
   #preparar() {
     const api = obterApi();
     const e = this.estado;
-    const validacao = ameacaDeFormulario(e);
+    let validacao = ameacaDeFormulario(e);
+    // Só o nome faltando não impede a prévia (nem as opções dos poderes): ela usa um nome provisório e o Criar fica desabilitado.
+    const semNome = !validacao.ok && validacao.erros.length === 1 && validacao.erros[0] === 'nome';
+    if (semNome) validacao = ameacaDeFormulario({ ...e, nome: t('T20FA.SemNome') });
     if (!validacao.ok) return { erros: validacao.erros.map((c) => this.#erroLegivel(c)) };
     const { ameaca } = validacao;
     const dados = montarDadosAtor(ameaca, { gerarId: () => foundry.utils.randomID() });
@@ -76,7 +79,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       nd: ameaca.nd, papel: papelDoSistema(ameaca.papel), ordemResistencias: e.ordem,
       templates: { chefeFinal: ameaca.chefeFinal },
     };
-    return { api, ameaca, limiteAtaques: api.maxAtaques(ameaca.nd), dados, opcoes };
+    return { api, ameaca, limiteAtaques: api.maxAtaques(ameaca.nd), dados, opcoes, erros: semNome ? [this.#erroLegivel('nome')] : null };
   }
 
   #erroLegivel(codigo) {
@@ -108,7 +111,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
         opcoes: Object.entries(TESTES).map(([valor, nome]) => ({ valor, nome, selecionado: valor === e.ordem[i] })),
       })),
       itensExtras: e.itensExtras.map((i, indice) => ({ indice, nome: i.name, tipo: i.type, img: i.img, temDano: false })),
-      erros: [], previa: null,
+      erros: [], previa: null, podeCriar: false,
     };
     this.pronto = null;
 
@@ -120,10 +123,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       ctx.erros = [erro.message?.startsWith('T20FA.') ? t(erro.message) : erro.message];
       return ctx;
     }
-    if (p.erros) {
-      ctx.erros = this.tocado ? p.erros : [];
-      return ctx;
-    }
+    ctx.erros = p.erros && this.tocado ? p.erros : [];
+    if (p.erros && !p.dados) return ctx; // erro que impede a prévia
 
     ctx.limiteAtaques = p.limiteAtaques;
     ctx.totalAtaques = p.ameaca.ataques.reduce((s, a) => s + a.qtd, 0);
@@ -145,7 +146,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
           antes: previa.antes, depois: previa.depois,
         });
       });
-      this.pronto = { dados: p.dados, ameaca: p.ameaca, opcoes: p.opcoes };
+      if (!p.erros) this.pronto = { dados: p.dados, ameaca: p.ameaca, opcoes: p.opcoes };
+      ctx.podeCriar = Boolean(this.pronto);
     } catch (erro) {
       console.error(`${ID_FORJA} |`, erro);
       ctx.erros = [erro.message];
