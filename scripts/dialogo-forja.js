@@ -4,9 +4,9 @@ import { obterApi, ID_AJUSTE_ND } from './api-ajuste-nd.js';
 import { itemExtraDe, ataqueDeArma, comDanoAjustado } from './forja/itens-extras.js';
 import { ehUrl } from './forja/imagem.js';
 import { PREFIXO_IMAGEM, guardarImagem, trazerDaUrl } from './imagem-foundry.js';
-import { papelDoSistema, CODIGOS_TAMANHO, CODIGOS_TIPO, CHAVES_DANO, NDS } from './forja/mapeamentos.js';
+import { papelDoSistema, CODIGOS_TAMANHO, CODIGOS_TIPO, CHAVES_DANO, NDS, ESCALAS_BANDO, aumentoPadrao } from './forja/mapeamentos.js';
 import { ameacaDeFormulario, ATRIBUTOS } from './forja/ameaca.js';
-import { montarDadosAtor, ataquesPorArmaDe, ID_FORJA, NOME_PASTA } from './forja/criar-ator.js';
+import { montarDadosAtor, ataquesPorArmaDe, casasDoTamanho, ID_FORJA, NOME_PASTA } from './forja/criar-ator.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -50,7 +50,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     super(options);
     this.estado = {
       nome: '', conceito: '', img: '', token: '', itensExtras: [],
-      nd: '5', papel: 'solo', chefeFinal: false, conjurador: false, conjuracao: 'int',
+      nd: '5', papel: 'solo', chefeFinal: false, enxame: false, bando: false, bandoEscala: '10-20', bandoAumento: 2, conjurador: false, conjuracao: 'int',
       tamanho: 'med', tipo: 'mon', deslocamento: 9,
       atributos: Object.fromEntries(ATRIBUTOS.map((a) => [a, 0])),
       ordem: ['fort', 'refl', 'vont'],
@@ -77,7 +77,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     const dados = montarDadosAtor(ameaca, { gerarId: () => foundry.utils.randomID() });
     const opcoes = {
       nd: ameaca.nd, papel: papelDoSistema(ameaca.papel), ordemResistencias: e.ordem,
-      templates: { chefeFinal: ameaca.chefeFinal },
+      templates: { chefeFinal: ameaca.chefeFinal, enxame: ameaca.enxame, bando: ameaca.bando },
       manterProporcao: false, // a arma nova nasce com um 1d6 provisório: não há proporção original (um poder grande deixava a arma em 1d6)
     };
     return { api, ameaca, limiteAtaques: api.maxAtaques(ameaca.nd), dados, opcoes, erros: semNome ? [this.#erroLegivel('nome')] : null };
@@ -94,6 +94,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     const ctx = {
       e, papeis: PAPEIS.map(([v, r]) => ({ valor: v, rotulo: r, selecionado: v === e.papel })),
       nds: NDS.map((v) => ({ valor: v, selecionado: v === e.nd })),
+      escalas: ESCALAS_BANDO.map((v) => ({ valor: v, selecionado: v === e.bandoEscala })),
+      semArmas: e.enxame && !e.bando, // o Enxame sozinho não usa ataques
       tamanhos: CODIGOS_TAMANHO.map((v) => ({ valor: v, rotulo: NOMES_TAMANHO[v], selecionado: v === e.tamanho })),
       tipos: CODIGOS_TIPO.map((v) => ({ valor: v, rotulo: NOMES_TIPO[v], selecionado: v === e.tipo })),
       atributos: ATRIBUTOS.map((a) => ({ chave: a, rotulo: NOMES_ATRIBUTO[a], valor: e.atributos[a] })),
@@ -167,7 +169,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     ];
     const armas = ameaca.ataques.map((a, i) => ({ nome: a.nome, qtd: a.qtd, formula: r.plano.dano?.porArma?.[idPorIndice[i]]?.formula ?? '—' }));
     const poderes = (r.poderesPrevia ?? []).filter((x) => x.depois).map(({ nome, antes, depois }) => ({ nome, antes, depois }));
-    return { linhas, armas, poderes, danoAlvo: r.plano.linha.Dano, avisos: r.avisos, patamar: r.patamar, revisar: r.plano.revisar };
+    const templates = r.templates?.notas ?? [];
+    return { linhas, armas, poderes, templates, danoAlvo: r.plano.linha.Dano, avisos: r.avisos, patamar: r.patamar, revisar: r.plano.revisar };
   }
 
   // ---------- leitura do formulário ----------
@@ -181,6 +184,13 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       e[campo] = valor(campo) ?? e[campo];
     }
     e.chefeFinal = el.querySelector('[name=chefeFinal]')?.checked ?? e.chefeFinal;
+    e.enxame = el.querySelector('[name=enxame]')?.checked ?? e.enxame;
+    e.bando = el.querySelector('[name=bando]')?.checked ?? e.bando;
+    const escala = valor('bandoEscala');
+    if (escala && escala !== e.bandoEscala) { // escala nova: o aumento de ND volta ao padrão dela
+      e.bandoEscala = escala;
+      e.bandoAumento = aumentoPadrao(escala);
+    } else e.bandoAumento = valor('bandoAumento') ?? e.bandoAumento;
     e.conjurador = el.querySelector('[name=conjurador]')?.checked ?? e.conjurador;
     ATRIBUTOS.forEach((a) => { e.atributos[a] = valor(`atributo-${a}`) ?? e.atributos[a]; });
     e.ordem = [0, 1, 2].map((i) => valor(`ordem-${i}`) ?? e.ordem[i]);
@@ -357,7 +367,14 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       const rascunho = new CONFIG.Actor.documentClass({ ...dados, folder: pasta.id });
       const resultado = await api.simular(rascunho, { ...opcoes, ataquesPorArma: ataquesPorArmaDe(rascunho.toObject().items, ameaca) });
       ator = await api.aplicarAjuste(rascunho, resultado, { copiar: true });
-      if (ator.name !== ameaca.nome) await ator.update({ name: ameaca.nome }); // a cópia vem com o sufixo "(ND 5)"
+      const mudancas = {};
+      if (ator.name !== ameaca.nome) mudancas.name = ameaca.nome; // a cópia vem com o sufixo "(ND 5)"
+      const tamanho = resultado.update['system.tracos.tamanho']; // o Bando sobe o tamanho: o token acompanha
+      if (tamanho && tamanho !== ameaca.tamanho) {
+        mudancas['prototypeToken.width'] = casasDoTamanho(tamanho);
+        mudancas['prototypeToken.height'] = casasDoTamanho(tamanho);
+      }
+      if (Object.keys(mudancas).length) await ator.update(mudancas);
     } catch (erro) {
       console.error(`${ID_FORJA} |`, erro);
       if (ator) await ator.delete().catch(() => {});

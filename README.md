@@ -23,6 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **0.4.0**: templates Enxame e Bando (com escala e aumento de ND): o Enxame sozinho desabilita os ataques e o Bando mostra as notas do Ajustar ND na prévia e leva o token ao tamanho do bando.
 - **0.3.3**: ao criar, o nome da criatura de onde um poder arrastado veio (por exemplo "Golem de Ferro" no Sopro do golem) vira o nome da ameaça no texto do poder. Só o nome completo é trocado e o artigo fica como está.
 - **0.3.2**: a rodada se divide por igual entre os golpes (não pela proporção de uma arma que nasce com 1d6 provisório); com o Ajustar ND 0.11.0, poder só de dados segue só dados.
 - **0.3.1**: a prévia (e as opções dos poderes arrastados) aparece mesmo sem o nome da ameaça; o Criar só habilita com o nome.

@@ -46,6 +46,22 @@
       <input type="checkbox" name="chefeFinal" {{#if e.chefeFinal}}checked{{/if}}>
       {{localize "T20FA.ChefeFinal"}}
     </label>
+    <label class="forja__marca" title="{{localize 'T20FA.EnxameDica'}}">
+      <input type="checkbox" name="enxame" {{#if e.enxame}}checked{{/if}}>
+      {{localize "T20FA.Enxame"}}
+    </label>
+    <div class="forja__linha">
+      <label class="forja__marca" title="{{localize 'T20FA.BandoDica'}}">
+        <input type="checkbox" name="bando" {{#if e.bando}}checked{{/if}}>
+        {{localize "T20FA.Bando"}}
+      </label>
+      <label>{{localize "T20FA.BandoEscala"}}
+        <select name="bandoEscala" {{#unless e.bando}}disabled{{/unless}}>{{#each escalas}}<option value="{{valor}}" {{#if selecionado}}selected{{/if}}>{{valor}}</option>{{/each}}</select>
+      </label>
+      <label>{{localize "T20FA.BandoAumento"}}
+        <input type="number" name="bandoAumento" min="0" max="12" value="{{e.bandoAumento}}" {{#unless e.bando}}disabled{{/unless}}>
+      </label>
+    </div>
     <div class="forja__linha">
       <span>{{localize "T20FA.Resistencias"}}:</span>
       {{#each ordem}}
@@ -88,8 +104,9 @@
     </div>
   </fieldset>
 
-  <fieldset>
+  <fieldset {{#if semArmas}}disabled{{/if}}>
     <legend>{{localize "T20FA.SecaoAtaques"}}</legend>
+    {{#if semArmas}}<p class="forja__nota">{{localize "T20FA.NotaEnxame"}}</p>{{/if}}
     {{#if limiteAtaques}}
     <p class="forja__nota">{{localize "T20FA.TotalAtaques"}}: <strong>{{totalAtaques}}</strong> · {{localize "T20FA.LimiteND"}}: <strong>{{limiteAtaques}}</strong></p>
     {{/if}}
@@ -155,6 +172,7 @@
     <p><strong>{{localize "T20FA.DanoPoderes"}}</strong></p>
     <ul>{{#each previa.poderes}}<li>{{nome}}: <code>{{antes}}</code> → <code>{{depois}}</code></li>{{/each}}</ul>
     {{/if}}
+    {{#if previa.templates.length}}<div class="forja__avisos"><strong>{{localize "T20FA.Templates"}}</strong><ul>{{#each previa.templates}}<li>{{this}}</li>{{/each}}</ul></div>{{/if}}
     {{#if previa.avisos.length}}<div class="forja__avisos"><strong>{{localize "T20FA.Avisos"}}</strong><ul>{{#each previa.avisos}}<li>{{this}}</li>{{/each}}</ul></div>{{/if}}
     {{#if previa.patamar.length}}<div class="forja__avisos"><strong>{{localize "T20FA.Patamar"}}</strong><ul>{{#each previa.patamar}}<li>{{this}}</li>{{/each}}</ul></div>{{/if}}
     {{#if previa.revisar.length}}<div class="forja__avisos"><strong>{{localize "T20FA.Revisar"}}</strong><ul>{{#each previa.revisar}}<li>{{this}}</li>{{/each}}</ul></div>{{/if}}

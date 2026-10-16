@@ -4,6 +4,7 @@
 .t20-forja-ameacas .forja { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.5rem; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
 .t20-forja-ameacas fieldset { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0.5rem 0.75rem; border: 1px solid #8886; border-radius: 4px; }
+.t20-forja-ameacas fieldset:disabled { opacity: 0.55; }
 .t20-forja-ameacas legend { padding: 0 0.4rem; font-weight: bold; }
 
 /* O sistema estica todo campo a 100%: aqui cada campo tem a largura do conteúdo e o rótulo fica em cima. */

@@ -10,6 +10,8 @@ export const NOME_PASTA = 'Forja de Ameaças';
 // Tamanho do token em casas da grade.
 const CASAS_DO_TAMANHO = { min: 1, peq: 1, med: 1, gra: 2, eno: 3, col: 4 };
 
+export const casasDoTamanho = (tamanho) => CASAS_DO_TAMANHO[tamanho] ?? 1;
+
 const escaparHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -75,7 +77,7 @@ export function montarDadosAtor(ameaca, { gerarId, pasta = null, agora = new Dat
   const token = ameaca.token || ameaca.img;
   if (token) dados.prototypeToken.texture.src = token;
 
-  const casas = CASAS_DO_TAMANHO[ameaca.tamanho] ?? 1;
+  const casas = casasDoTamanho(ameaca.tamanho);
   dados.prototypeToken.name = ameaca.nome;
   dados.prototypeToken.displayName = TOKEN_NOME_DONO_PASSA_MOUSE;
   dados.prototypeToken.displayBars = TOKEN_BARRA_DONO;

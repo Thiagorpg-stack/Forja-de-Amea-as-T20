@@ -18,7 +18,7 @@ test('lang: todo texto usado no template e no código existe', () => {
   const usadas = new Set([
     ...[...ler('../templates/dialogo-forja.hbs').matchAll(/localize\s*["']?(T20FA\.[\w.]+)/g)].map((m) => m[1]),
     ...['../scripts/dialogo-forja.js', '../scripts/imagem-foundry.js', '../scripts/main.js', '../scripts/api-ajuste-nd.js'].flatMap(chavesEm),
-    ...['nome', 'nd', 'papel', 'tamanho', 'tipo', 'deslocamento'].map((c) => `T20FA.Erro.${c}`), // montadas em #erroLegivel
+    ...['nome', 'nd', 'papel', 'tamanho', 'tipo', 'deslocamento', 'bandoEscala'].map((c) => `T20FA.Erro.${c}`), // montadas em #erroLegivel
   ]);
   assert.deepEqual([...usadas].filter((k) => !(k in lang)), []);
 });
