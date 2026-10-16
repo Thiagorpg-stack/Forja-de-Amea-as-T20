@@ -105,9 +105,10 @@ function dialogoComZona(arrasto, itens) {
   foundry.applications.ux = { TextEditor: { implementation: { getDragEventData: () => arrasto } } };
   globalThis.fromUuid = async (uuid) => itens[uuid] ?? null;
   const avisos = [];
-  globalThis.ui = { notifications: { warn: (m) => avisos.push(m) } };
+  const infos = [];
+  globalThis.ui = { notifications: { warn: (m) => avisos.push(m), info: (m) => infos.push(m) } };
   game.i18n.format = (chave, dados) => `${chave}:${JSON.stringify(dados)}`;
-  return { d, zona, avisos, soltar: () => zona.ouvintes.drop({ preventDefault() {} }) };
+  return { d, zona, avisos, infos, soltar: () => zona.ouvintes.drop({ preventDefault() {} }) };
 }
 const itemFalso = (type, name = 'Sopro') => ({ type, name, toObject: () => ({ _id: 'x', name, type, flags: {}, system: {} }) });
 
@@ -262,4 +263,27 @@ test('criar: se a cópia já vem com o nome certo, não atualiza nada; se o ajus
   const renomeia = mundoDeCriacao({ falhaNoNome: true });
   await criarComMundo(renomeia);
   assert.equal(renomeia.registro.apagou, true); // criou e falhou depois: apaga o ator
+});
+
+test('soltar uma magia marca Conjurador (PM = 5 × ND) e avisa; poder não marca; remover a magia não desmarca', async () => {
+  const magia = dialogoComZona({ type: 'Item', uuid: 'M1' }, { M1: itemFalso('magia', 'Bola de Fogo') });
+  assert.equal(magia.d.estado.conjurador, false);
+  await magia.soltar();
+  assert.deepEqual([magia.d.estado.conjurador, magia.d.estado.itensExtras.length, magia.infos.length], [true, 1, 1]);
+  assert.match(magia.infos[0], /AvisoConjuradorMarcado/);
+
+  const poder = dialogoComZona({ type: 'Item', uuid: 'P1' }, { P1: itemFalso('poder') });
+  await poder.soltar();
+  assert.deepEqual([poder.d.estado.conjurador, poder.infos.length], [false, 0]);
+
+  // já conjurador: não avisa de novo
+  const ja = dialogoComZona({ type: 'Item', uuid: 'M2' }, { M2: itemFalso('magia') });
+  ja.d.estado.conjurador = true;
+  await ja.soltar();
+  assert.deepEqual([ja.d.estado.conjurador, ja.infos.length], [true, 0]);
+
+  magia.d.render = async () => {};
+  magia.d.element = { querySelectorAll: () => [], querySelector: () => null };
+  await DialogoForja.DEFAULT_OPTIONS.actions.removerItemExtra.call(magia.d, null, { dataset: { indice: '0' } });
+  assert.deepEqual([magia.d.estado.itensExtras.length, magia.d.estado.conjurador], [0, true]); // quem decide desmarcar é o mestre
 });

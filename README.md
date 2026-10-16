@@ -23,6 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **Em andamento (0.3.0, fase A)**: soltar uma magia marca Conjurador sozinha; linha de ataque mais compacta.
 - **0.2.6**: o ator é criado já ajustado (o Ajustar ND roda sobre um ator ainda não salvo e cria o final), porque atualizar as perícias de um ator existente devolve "for" ao atributo de Fortitude, Reflexos e Vontade (medido no Foundry 14 com o Tormenta20 1.6.6).
 - **0.2.1**: corrige o botão Criar ameaça, que falhava quando o formulário era lido (erro `null.value`).
 - **0.2.0**: arrastar arma (vira linha de ataque) e dano extra por ataque.

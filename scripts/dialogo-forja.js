@@ -226,6 +226,10 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     this.#lerFormulario();
     if (linha) this.estado.ataques.push(linha);
     else this.estado.itensExtras.push(extra);
+    if (extra?.type === 'magia' && !this.estado.conjurador) { // magia sem PM não lança nada: o mestre desmarca se não quiser
+      this.estado.conjurador = true;
+      ui.notifications.info(t('T20FA.AvisoConjuradorMarcado'));
+    }
     await this.render();
   }
 
