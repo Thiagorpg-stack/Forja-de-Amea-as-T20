@@ -426,3 +426,61 @@ test('o campo "nomes de criaturas" é lido do formulário e a troca vale na fich
     ajusteNd.api = original;
   }
 });
+
+test('dois poderes com criaturas diferentes: os dois nomes da lista são trocados, cada um no seu texto', async () => {
+  const mundo = mundoDeCriacao();
+  const original = ajusteNd.api;
+  ajusteNd.api = mundo.api;
+  try {
+    const poder = (nome, texto) => ({ name: nome, type: 'poder', img: 'a.svg', flags: {}, system: { description: { value: texto } } });
+    const d = novo({ nome: 'Lobush', nomesOrigem: 'golem de ferro, lobo' });
+    d.estado.itensExtras = [poder('Sopro', '<p>O golem de ferro expele gás.</p>'), poder('Táticas', '<p>Quando flanqueia, o lobo recebe +2.</p>')];
+    // a tela devolve o campo como o mestre o deixou (com espaço depois da vírgula)
+    d.element = { querySelector: (s) => (s === '[name=nomesOrigem]' ? { value: 'golem de ferro, lobo' } : null), querySelectorAll: () => [] };
+    d.render = async () => { await d._prepareContext(); };
+    d.close = async () => {};
+    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
+    const itens = mundo.registro.aplicouCom.rascunho.dados.items;
+    assert.equal(itens.find((i) => i.name === 'Sopro').system.description.value, '<p>O Lobush expele gás.</p>');
+    assert.equal(itens.find((i) => i.name === 'Táticas').system.description.value, '<p>Quando flanqueia, o Lobush recebe +2.</p>');
+  } finally {
+    ajusteNd.api = original;
+  }
+});
+
+test('feedback por poder: mostra os nomes da lista que aparecem no texto de cada um; os que não aparecem em nenhum vão para o aviso', async () => {
+  const item = (nome, texto) => ({ name: nome, type: 'poder', img: 'a.svg', flags: {}, system: { description: { value: texto } } });
+  const d = novo({ nome: 'Lobush', nomesOrigem: 'golem de ferro, centopeia dragao, lobo, dragão azul' });
+  d.estado.itensExtras = [item('Sopro', '<p>O golem de ferro expele gás.</p>'), item('Aura', '<p>No turno da centopeia\u2011dragão, o lobo ruge.</p>')];
+  const ctx = await d._prepareContext();
+  assert.deepEqual(ctx.itensExtras.map((i) => i.trocas), [['golem de ferro'], ['centopeia dragao', 'lobo']]);
+  assert.equal(ctx.nomesSemTroca, 'dragão azul');
+  assert.equal(ctx.nomeAmeaca, 'Lobush');
+  // sem lista ou sem poderes, nada a avisar
+  const sem = await novo({ nome: '' })._prepareContext();
+  assert.deepEqual([sem.nomesSemTroca, sem.nomeAmeaca], ['', 'T20FA.SemNome']);
+  const semPoderes = novo({ nomesOrigem: 'lobo' });
+  assert.equal((await semPoderes._prepareContext()).nomesSemTroca, '');
+});
+
+test('a troca real: o nome com hífen diferente no texto do poder é trocado ao criar', async () => {
+  const mundo = mundoDeCriacao();
+  const original = ajusteNd.api;
+  ajusteNd.api = mundo.api;
+  try {
+    const d = novo({ nome: 'Lobush', nomesOrigem: 'chefe bandido, centopeia-dragão' });
+    d.estado.itensExtras = [
+      { name: 'Ataque Furtivo', type: 'poder', img: 'a.svg', flags: {}, system: { description: { value: '<p>Uma vez por rodada, o chefe bandido causa +2d6.</p>' } } },
+      { name: 'Aura de Calor', type: 'poder', img: 'a.svg', flags: {}, system: { description: { value: '<p>No início de cada turno da centopeia\u2011dragão, todas sofrem.</p>' } } },
+    ];
+    d.element = { querySelector: (s) => (s === '[name=nomesOrigem]' ? { value: 'chefe bandido, centopeia-dragão' } : null), querySelectorAll: () => [] };
+    d.render = async () => { await d._prepareContext(); };
+    d.close = async () => {};
+    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
+    const itens = mundo.registro.aplicouCom.rascunho.dados.items;
+    assert.equal(itens.find((i) => i.name === 'Ataque Furtivo').system.description.value, '<p>Uma vez por rodada, o Lobush causa +2d6.</p>');
+    assert.equal(itens.find((i) => i.name === 'Aura de Calor').system.description.value, '<p>No início de cada turno da Lobush, todas sofrem.</p>');
+  } finally {
+    ajusteNd.api = original;
+  }
+});

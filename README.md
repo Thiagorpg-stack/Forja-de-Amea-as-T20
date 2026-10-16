@@ -23,6 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **0.4.2**: a troca do nome da criatura ignora maiúscula, acento e a diferença entre hífen e espaço (um texto com hífen "não separável" não casava com o nome digitado), vale só para palavra inteira, e cada poder mostra "Troca no texto: ... → nome da ameaça"; um aviso lista os nomes que não aparecem em nenhum texto.
 - **0.4.1**: a troca do nome da criatura nos textos dos poderes passa a ser um campo "Nomes de criaturas nos textos" (o nome da ficha de origem entra sozinho quando o Foundry o informa), porque poderes de compêndios de itens avulsos não têm ficha de origem.
 - **0.4.0**: templates Enxame e Bando (com escala e aumento de ND): o Enxame sozinho desabilita os ataques e o Bando mostra as notas do Ajustar ND na prévia e leva o token ao tamanho do bando.
 - **0.3.3**: ao criar, o nome da criatura citado no texto de um poder arrastado vira o nome da ameaça (só o nome completo; o artigo fica como está). Só funcionava quando o poder vinha de uma ficha; a 0.4.1 corrige.

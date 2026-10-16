@@ -34,6 +34,8 @@
 .t20-forja-ameacas .forja__ataque button { flex: 0 0 auto; width: auto; white-space: nowrap; }
 .t20-forja-ameacas .forja__item { display: flex; flex-direction: column; gap: 0.25rem; }
 .t20-forja-ameacas .forja__itens > label input { width: 100%; }
+.t20-forja-ameacas .forja__troca { padding-left: 1.75rem; font-size: 0.9em; }
+.t20-forja-ameacas .forja__aviso { color: #b8860b; }
 .t20-forja-ameacas .forja__dano { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; padding-left: 1.75rem; font-size: 0.9em; }
 .t20-forja-ameacas .forja__extra { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.9em; }
 .t20-forja-ameacas .forja__extra button { flex: 0 0 auto; width: auto; }

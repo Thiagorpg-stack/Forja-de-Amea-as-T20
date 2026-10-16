@@ -6,6 +6,7 @@ import { ehUrl } from './forja/imagem.js';
 import { PREFIXO_IMAGEM, guardarImagem, trazerDaUrl } from './imagem-foundry.js';
 import { papelDoSistema, CODIGOS_TAMANHO, CODIGOS_TIPO, CHAVES_DANO, NDS, ESCALAS_BANDO, aumentoPadrao } from './forja/mapeamentos.js';
 import { ameacaDeFormulario, ATRIBUTOS } from './forja/ameaca.js';
+import { listaDeNomes, nomesCitados, igualNome } from './forja/nomes.js';
 import { montarDadosAtor, ataquesPorArmaDe, casasDoTamanho, ID_FORJA, NOME_PASTA } from './forja/criar-ator.js';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -91,6 +92,14 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async _prepareContext() {
     const e = this.estado;
+    // O que será trocado em cada poder: os nomes da lista que aparecem no texto dele (o resto vira o aviso abaixo do campo).
+    const nomes = listaDeNomes(e.nomesOrigem);
+    const citadosEmAlgum = new Set();
+    const trocas = e.itensExtras.map((i) => {
+      const citados = nomesCitados(i.system?.description?.value, nomes);
+      citados.forEach((n) => citadosEmAlgum.add(n));
+      return citados;
+    });
     const ctx = {
       e, papeis: PAPEIS.map(([v, r]) => ({ valor: v, rotulo: r, selecionado: v === e.papel })),
       nds: NDS.map((v) => ({ valor: v, selecionado: v === e.nd })),
@@ -113,7 +122,9 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
         indice: i, rotulo,
         opcoes: Object.entries(TESTES).map(([valor, nome]) => ({ valor, nome, selecionado: valor === e.ordem[i] })),
       })),
-      itensExtras: e.itensExtras.map((i, indice) => ({ indice, nome: i.name, tipo: i.type, img: i.img, temDano: false })),
+      itensExtras: e.itensExtras.map((i, indice) => ({ indice, nome: i.name, tipo: i.type, img: i.img, temDano: false, trocas: trocas[indice] })),
+      nomeAmeaca: e.nome.trim() || t('T20FA.SemNome'),
+      nomesSemTroca: e.itensExtras.length ? nomes.filter((n) => !citadosEmAlgum.has(n)).join(', ') : '',
       erros: [], previa: null, podeCriar: false,
     };
     this.pronto = null;
@@ -262,8 +273,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       this.estado.itensExtras.push(extra);
       // A ficha de onde o poder veio dá o nome da criatura citada no texto (poder de compêndio de itens avulsos não tem ficha).
       const origem = item?.parent?.name;
-      const lista = this.estado.nomesOrigem.split(/[,;\n]/).map((n) => n.trim()).filter(Boolean);
-      if (origem && !lista.some((n) => n.toLowerCase() === origem.toLowerCase())) this.estado.nomesOrigem = [...lista, origem].join(', ');
+      const lista = listaDeNomes(this.estado.nomesOrigem);
+      if (origem && !lista.some((n) => igualNome(n, origem))) this.estado.nomesOrigem = [...lista, origem].join(', ');
     }
     if (extra?.type === 'magia' && !this.estado.conjurador) { // magia sem PM não lança nada: o mestre desmarca se não quiser
       this.estado.conjurador = true;

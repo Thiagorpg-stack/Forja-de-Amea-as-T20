@@ -148,12 +148,14 @@
         <span>{{localize "T20FA.PoderDano"}}: <code>{{antes}}</code>{{#if depois}} → <code>{{depois}}</code>{{/if}}</span>
       </div>
       {{/if}}
+      {{#if trocas.length}}<div class="forja__troca">{{localize "T20FA.TrocaNoTexto"}}: {{#each trocas}}<em>{{this}}</em>{{#unless @last}}, {{/unless}}{{/each}} → <strong>{{../nomeAmeaca}}</strong></div>{{/if}}
     </div>
     {{/each}}
     {{#if itensExtras.length}}
     <label title="{{localize 'T20FA.NomesOrigemDica'}}">{{localize "T20FA.NomesOrigem"}}
       <input type="text" name="nomesOrigem" value="{{e.nomesOrigem}}" placeholder="{{localize 'T20FA.NomesOrigemExemplo'}}">
     </label>
+    {{#if nomesSemTroca}}<p class="forja__nota forja__aviso">{{localize "T20FA.NomesSemTroca"}}: {{nomesSemTroca}}</p>{{/if}}
     {{/if}}
   </fieldset>
 

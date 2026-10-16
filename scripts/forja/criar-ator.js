@@ -3,6 +3,7 @@
 // quem cria o ator no Foundry (diálogo) injeta gerarId e usa Actor.create.
 import { criarActorTemplate, criarItemArma } from './modelo-ator.js';
 import { papelDoSistema, valorND } from './mapeamentos.js';
+import { trocarNomes } from './nomes.js';
 
 export const ID_FORJA = 't20-forja-ameacas';
 export const NOME_PASTA = 'Forja de Ameaças';
@@ -15,17 +16,13 @@ export const casasDoTamanho = (tamanho) => CASAS_DO_TAMANHO[tamanho] ?? 1;
 const escaparHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const escaparRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 // O poder arrastado de uma criatura fala dela no texto ("O golem de ferro expele..."): os nomes de criatura que o mestre
-// listou viram o nome desta ameaça, só no texto fora das marcas HTML. O mais longo vem primeiro ("orc mutante" antes de "orc").
+// listou viram o nome desta ameaça (casamento tolerante e fora das marcas HTML: ver nomes.js).
 // shortcut: só o nome completo e o artigo fica; forma curta ("o golem") e a concordância de gênero ficam como estão.
 export function comNomeDaAmeaca(item, nome, origens = []) {
   const texto = item.system?.description?.value;
-  if (!origens.length || !texto) return item;
-  const padrao = new RegExp([...origens].sort((x, y) => y.length - x.length).map(escaparRegex).join('|'), 'gi');
-  const novo = texto.split(/(<[^>]*>)/).map((parte) => (parte.startsWith('<') ? parte : parte.replace(padrao, () => escaparHtml(nome)))).join('');
-  if (novo === texto) return item;
+  const novo = trocarNomes(texto, origens, escaparHtml(nome));
+  if (!texto || novo === texto) return item;
   const copia = structuredClone(item);
   copia.system.description.value = novo;
   return copia;
