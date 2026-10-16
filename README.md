@@ -23,6 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **0.3.2**: a rodada se divide por igual entre os golpes (não pela proporção de uma arma que nasce com 1d6 provisório); com o Ajustar ND 0.11.0, poder só de dados segue só dados.
 - **0.3.1**: a prévia (e as opções dos poderes arrastados) aparece mesmo sem o nome da ameaça; o Criar só habilita com o nome.
 - **0.3.0**: soltar uma magia marca Conjurador sozinha; em um poder arrastado com dano, as caixas "Ajustar o dano pela tabela do ND" e "Com efeito" (desligadas por padrão) com a prévia antes → depois; linha de ataque mais compacta.
 - **0.2.6**: o ator é criado já ajustado (o Ajustar ND roda sobre um ator ainda não salvo e cria o final), porque atualizar as perícias de um ator existente devolve "for" ao atributo de Fortitude, Reflexos e Vontade (medido no Foundry 14 com o Tormenta20 1.6.6).

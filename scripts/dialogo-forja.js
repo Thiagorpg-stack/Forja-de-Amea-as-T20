@@ -78,6 +78,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     const opcoes = {
       nd: ameaca.nd, papel: papelDoSistema(ameaca.papel), ordemResistencias: e.ordem,
       templates: { chefeFinal: ameaca.chefeFinal },
+      manterProporcao: false, // a arma nova nasce com um 1d6 provisório: não há proporção original (um poder grande deixava a arma em 1d6)
     };
     return { api, ameaca, limiteAtaques: api.maxAtaques(ameaca.nd), dados, opcoes, erros: semNome ? [this.#erroLegivel('nome')] : null };
   }

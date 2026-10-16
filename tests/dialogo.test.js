@@ -55,6 +55,7 @@ test('contexto: o ND escolhido vai direto para a API, o ator é simulado e a pr�
   assert.equal(opcoes.papel, 'solo');
   assert.deepEqual(opcoes.ordemResistencias, ['fort', 'refl', 'vont']);
   assert.deepEqual(opcoes.templates, { chefeFinal: false });
+  assert.equal(opcoes.manterProporcao, false); // a arma nova nasce com um 1d6 provisório: sem proporção original a manter
   assert.equal(actor.dados.system.attributes.nd, '10');
   assert.deepEqual(opcoes.ataquesPorArma, { [actor.dados.items[0]._id]: 1 });
   assert.ok(d.pronto);

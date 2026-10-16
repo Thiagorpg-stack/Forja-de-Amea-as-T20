@@ -1,6 +1,6 @@
 {
   "name": "t20-forja-ameacas",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "type": "module",
   "description": "Forja de Ameaças: módulo do Foundry VTT que cria ameaças de Tormenta20 a partir do ND e do papel",
