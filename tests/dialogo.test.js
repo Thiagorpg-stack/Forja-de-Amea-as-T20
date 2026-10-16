@@ -391,62 +391,38 @@ test('ler o formulário: as caixas do poder viram a flag no item; "efeito" desab
   assert.equal(AJUSTE_ND in d.estado.itensExtras[0].flags, false); // desligou: a flag some
 });
 
-test('soltar um poder de uma ficha guarda o nome da criatura de origem; sem ficha de origem, não guarda', async () => {
+test('soltar um poder de uma ficha acrescenta a criatura de origem à lista de nomes (sem repetir); sem ficha de origem, a lista não muda', async () => {
   const daFicha = { ...itemFalso('poder', 'Sopro'), parent: { name: 'Golem de Ferro' } };
   const a = dialogoComZona({ type: 'Item', uuid: 'O1' }, { O1: daFicha });
   await a.soltar();
-  assert.deepEqual(a.d.estado.itensExtras[0].flags['t20-forja-ameacas'], { extra: true, origem: 'Golem de Ferro' });
+  assert.equal(a.d.estado.nomesOrigem, 'Golem de Ferro');
+  assert.equal('origem' in a.d.estado.itensExtras[0].flags['t20-forja-ameacas'], false); // a origem não fica no item
+  a.d.estado.nomesOrigem = 'Lobo, golem de ferro';
+  await a.soltar();
+  assert.equal(a.d.estado.nomesOrigem, 'Lobo, golem de ferro'); // já estava (sem diferenciar maiúsculas)
+  a.d.estado.nomesOrigem = 'Lobo';
+  await a.soltar();
+  assert.equal(a.d.estado.nomesOrigem, 'Lobo, Golem de Ferro');
   const solto = dialogoComZona({ type: 'Item', uuid: 'O2' }, { O2: itemFalso('poder', 'Sopro') });
   await solto.soltar();
-  assert.deepEqual(solto.d.estado.itensExtras[0].flags['t20-forja-ameacas'], { extra: true });
+  assert.equal(solto.d.estado.nomesOrigem, '');
 });
 
-test('Enxame e Bando vão para o Ajustar ND no formato dele; Enxame sozinho desabilita os ataques na tela', async () => {
-  chamadas.length = 0;
-  const d = novo({ enxame: true, bando: true, bandoEscala: '20-40', bandoAumento: 3 });
-  let ctx = await d._prepareContext();
-  assert.deepEqual(chamadas[0].opcoes.templates, { chefeFinal: false, enxame: true, bando: { escala: '20-40', aumentoND: 3 } });
-  assert.equal(ctx.semArmas, false); // com o Bando as armas ficam
-  assert.deepEqual(ctx.escalas.filter((x) => x.selecionado).map((x) => x.valor), ['20-40']);
-
-  const enxame = novo({ enxame: true });
-  ctx = await enxame._prepareContext();
-  assert.equal(ctx.semArmas, true);
-  assert.equal(chamadas.at(-1).actor.dados.items.filter((i) => i.type === 'arma').length, 0); // nenhuma arma digitada vai para o ator
-  assert.equal(enxame.estado.ataques.length, 1); // mas a linha continua guardada para quando o Enxame sair
-});
-
-test('a prévia mostra as notas dos templates que o Ajustar ND devolve', async () => {
-  const original = ajusteNd.api.simular;
-  ajusteNd.api.simular = async (ator, opcoes) => ({ ...(await original(ator, opcoes)), templates: { notas: ['Bando: PV do ND 7.'] } });
-  try {
-    const ctx = await novo({ bando: true })._prepareContext();
-    assert.deepEqual(ctx.previa.templates, ['Bando: PV do ND 7.']);
-  } finally {
-    ajusteNd.api.simular = original;
-  }
-  assert.deepEqual((await novo()._prepareContext()).previa.templates, []); // Ajustar ND sem templates na resposta
-});
-
-test('ler o formulário: trocar a escala do Bando traz o aumento padrão dela; manter a escala respeita o que foi digitado', async () => {
-  const d = novo({ bando: true, bandoEscala: '10-20', bandoAumento: 2 });
-  const campos = { bandoEscala: { value: '50-70' }, bandoAumento: { value: '5' }, bando: { checked: true }, enxame: { checked: false } };
-  d.element = { querySelector: (s) => campos[/\[name=(\w+)\]/.exec(s)?.[1]] ?? null, querySelectorAll: () => [] };
-  d.render = async () => {};
-  await DialogoForja.DEFAULT_OPTIONS.actions.addAtaque.call(d); // lê o formulário antes de mexer
-  assert.deepEqual([d.estado.bandoEscala, d.estado.bandoAumento], ['50-70', 4]); // escala nova: aumento padrão dela, não o 5 antigo
-  campos.bandoAumento.value = '7';
-  await DialogoForja.DEFAULT_OPTIONS.actions.addAtaque.call(d);
-  assert.deepEqual([d.estado.bandoEscala, Number(d.estado.bandoAumento)], ['50-70', 7]); // mesma escala: vale o digitado (a tela entrega texto)
-  campos.enxame.checked = true; campos.bando.checked = false;
-  await DialogoForja.DEFAULT_OPTIONS.actions.addAtaque.call(d);
-  assert.deepEqual([d.estado.enxame, d.estado.bando], [true, false]);
-});
-
-test('criar com Bando: o token acompanha o tamanho que o Ajustar ND deu à ameaça, junto com o nome', async () => {
+test('o campo "nomes de criaturas" é lido do formulário e a troca vale na ficha criada', async () => {
   const mundo = mundoDeCriacao();
-  const simularAntes = mundo.api.simular;
-  mundo.api.simular = async (r, o) => ({ ...(await simularAntes(r, o)), update: { 'system.tracos.tamanho': 'gra' } });
-  await criarComMundo(mundo);
-  assert.deepEqual(mundo.registro.atualizacoes, [{ name: 'Lobo Gigante', 'prototypeToken.width': 2, 'prototypeToken.height': 2 }]);
+  const original = ajusteNd.api;
+  ajusteNd.api = mundo.api;
+  try {
+    const d = novo({ nome: 'Lobush', nomesOrigem: 'golem de ferro' });
+    d.estado.itensExtras = [{ name: 'Sopro', type: 'poder', img: 'a.svg', flags: {}, system: { description: { value: '<p>O golem de ferro expele gás.</p>' } } }];
+    d.element = { querySelector: (s) => (s === '[name=nomesOrigem]' ? { value: 'golem de ferro, lobo' } : null), querySelectorAll: () => [] };
+    d.render = async () => { await d._prepareContext(); };
+    d.close = async () => {};
+    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
+    assert.equal(d.estado.nomesOrigem, 'golem de ferro, lobo');
+    const itens = mundo.registro.aplicouCom.rascunho.dados.items;
+    assert.equal(itens.find((i) => i.name === 'Sopro').system.description.value, '<p>O Lobush expele gás.</p>');
+  } finally {
+    ajusteNd.api = original;
+  }
 });

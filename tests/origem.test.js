@@ -1,51 +1,58 @@
-// O poder arrastado de uma criatura (Sopro do Golem de Ferro) fala dela no texto: ao criar, o nome da criatura de origem
-// vira o nome da ameaça. Só o nome completo é trocado, e o artigo fica como está.
+// O poder arrastado de uma criatura (Sopro do Golem de Ferro) fala dela no texto: ao criar, os nomes de criatura que o mestre
+// listou (a Forja preenche o da ficha de origem, quando sabe) viram o nome da ameaça. O artigo fica como está.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { itemExtraDe } from '../scripts/forja/itens-extras.js';
-import { comNomeDaAmeaca, montarDadosAtor, ID_FORJA } from '../scripts/forja/criar-ator.js';
+import { comNomeDaAmeaca, montarDadosAtor } from '../scripts/forja/criar-ator.js';
 import { ameacaDeFormulario } from '../scripts/forja/ameaca.js';
 
-const poder = (texto, origem) => ({
-  name: 'Sopro', type: 'poder', flags: origem ? { [ID_FORJA]: { extra: true, origem } } : {}, system: { description: { value: texto } },
-});
+const poder = (texto) => ({ name: 'Sopro', type: 'poder', flags: {}, system: { description: { value: texto } } });
+const base = { nome: 'Lobush', nd: '5', papel: 'solo', tamanho: 'med', tipo: 'mon', atributos: {}, ataques: [] };
 
-test('itemExtraDe: guarda a criatura de origem na flag do item (e nada quando não há)', () => {
-  const dados = { _id: 'x', name: 'Sopro', type: 'poder', flags: {}, system: {} };
-  assert.deepEqual(itemExtraDe(dados, 'Golem de Ferro').flags[ID_FORJA], { extra: true, origem: 'Golem de Ferro' });
-  assert.deepEqual(itemExtraDe(dados).flags[ID_FORJA], { extra: true });
-  assert.deepEqual(itemExtraDe(dados, '').flags[ID_FORJA], { extra: true });
-});
-
-test('comNomeDaAmeaca: troca o nome completo da criatura, sem diferenciar maiúsculas, e mantém o artigo', () => {
-  const item = poder('<p>O golem de ferro expele gás. Fugir do Golem de Ferro é difícil.</p>', 'Golem de Ferro');
-  const novo = comNomeDaAmeaca(item, 'Lobush');
+test('comNomeDaAmeaca: troca o nome citado, sem diferenciar maiúsculas, e mantém o artigo', () => {
+  const item = poder('<p>O golem de ferro expele gás. Fugir do Golem de Ferro é difícil.</p>');
+  const novo = comNomeDaAmeaca(item, 'Lobush', ['golem de ferro']);
   assert.equal(novo.system.description.value, '<p>O Lobush expele gás. Fugir do Lobush é difícil.</p>');
   assert.equal(item.system.description.value.includes('Lobush'), false); // não altera o item recebido
 });
 
-test('comNomeDaAmeaca: não mexe em atributos de HTML, escapa o nome e aceita caracteres especiais de regex', () => {
-  const item = poder('<p><a title="Golem de Ferro" href="x">Golem de Ferro</a></p>', 'Golem de Ferro');
-  assert.equal(comNomeDaAmeaca(item, 'A&B <i>').system.description.value, '<p><a title="Golem de Ferro" href="x">A&amp;B &lt;i&gt;</a></p>');
-  assert.equal(comNomeDaAmeaca(item, '$&').system.description.value.includes('$&'), true); // "$&" não vira o trecho encontrado
-  const parenteses = poder('<p>A criatura (Alfa) ataca.</p>', '(Alfa)');
-  assert.equal(comNomeDaAmeaca(parenteses, 'Beta').system.description.value, '<p>A criatura Beta ataca.</p>');
+test('comNomeDaAmeaca: vários nomes de uma vez, o mais longo primeiro (orc mutante antes de orc)', () => {
+  const item = poder('<p>Se o orc mutante acerta, o orc ri. O lobo uiva.</p>');
+  assert.equal(comNomeDaAmeaca(item, 'Lobush', ['orc', 'lobo', 'orc mutante']).system.description.value,
+    '<p>Se o Lobush acerta, o Lobush ri. O Lobush uiva.</p>');
 });
 
-test('comNomeDaAmeaca: sem criatura de origem, sem texto ou com forma curta do nome, nada muda', () => {
-  const sem = poder('<p>O golem ataca.</p>');
-  assert.equal(comNomeDaAmeaca(sem, 'Lobush'), sem);
-  assert.equal(comNomeDaAmeaca(poder('<p>O golem ataca.</p>', 'Golem de Ferro'), 'Lobush').system.description.value, '<p>O golem ataca.</p>');
-  const vazio = { name: 'Magias', type: 'poder', flags: { [ID_FORJA]: { origem: 'X' } }, system: { description: { value: '' } } };
-  assert.equal(comNomeDaAmeaca(vazio, 'Lobush'), vazio);
-  const semSystem = { name: 'Y', type: 'poder', flags: { [ID_FORJA]: { origem: 'X' } } };
-  assert.equal(comNomeDaAmeaca(semSystem, 'Lobush'), semSystem);
+test('comNomeDaAmeaca: não mexe em atributos de HTML, escapa o nome e aceita caracteres especiais de regex', () => {
+  const item = poder('<p><a title="Golem de Ferro" href="x">Golem de Ferro</a></p>');
+  assert.equal(comNomeDaAmeaca(item, 'A&B <i>', ['Golem de Ferro']).system.description.value, '<p><a title="Golem de Ferro" href="x">A&amp;B &lt;i&gt;</a></p>');
+  assert.equal(comNomeDaAmeaca(item, '$&', ['Golem de Ferro']).system.description.value.includes('$&'), true); // "$&" não vira o trecho encontrado
+  assert.equal(comNomeDaAmeaca(poder('<p>A criatura (Alfa) ataca.</p>'), 'Beta', ['(Alfa)']).system.description.value, '<p>A criatura Beta ataca.</p>');
+});
+
+test('comNomeDaAmeaca: sem nomes, sem texto ou sem ocorrência, o item volta como veio', () => {
+  const item = poder('<p>O golem ataca.</p>');
+  assert.equal(comNomeDaAmeaca(item, 'Lobush', []), item);
+  assert.equal(comNomeDaAmeaca(item, 'Lobush'), item);
+  assert.equal(comNomeDaAmeaca(item, 'Lobush', ['golem de ferro']), item); // forma curta no texto: não casa
+  const vazio = poder('');
+  assert.equal(comNomeDaAmeaca(vazio, 'Lobush', ['X']), vazio);
+  const semSystem = { name: 'Y', type: 'poder', flags: {} };
+  assert.equal(comNomeDaAmeaca(semSystem, 'Lobush', ['X']), semSystem);
+});
+
+test('ameacaDeFormulario: a lista de nomes aceita vírgula, ponto e vírgula e linha; tira vazios e repetidos', () => {
+  const nomes = (campo) => ameacaDeFormulario({ ...base, nomesOrigem: campo }).ameaca.nomesOrigem;
+  assert.deepEqual(nomes(' golem de ferro, lobo ;  necromante\nlobo ,, '), ['golem de ferro', 'lobo', 'necromante']);
+  assert.deepEqual(nomes(''), []);
+  assert.deepEqual(nomes(undefined), []);
 });
 
 test('montarDadosAtor: os poderes arrastados saem com o nome da ameaça no texto, e o item da tela fica como veio', () => {
-  const item = poder('<p>O golem de ferro expele gás.</p>', 'Golem de Ferro');
-  const { ameaca } = ameacaDeFormulario({ nome: 'Lobush', nd: '5', papel: 'solo', tamanho: 'med', tipo: 'mon', atributos: {}, ataques: [], itensExtras: [item] });
+  const item = poder('<p>O golem de ferro expele gás.</p>');
+  const { ameaca } = ameacaDeFormulario({ ...base, itensExtras: [item], nomesOrigem: 'golem de ferro' });
   const d = montarDadosAtor(ameaca, { gerarId: () => 'id1' });
   assert.equal(d.items[0].system.description.value, '<p>O Lobush expele gás.</p>');
   assert.equal(item.system.description.value, '<p>O golem de ferro expele gás.</p>');
+  // sem a lista, o texto não muda
+  const sem = ameacaDeFormulario({ ...base, itensExtras: [item] }).ameaca;
+  assert.equal(montarDadosAtor(sem, { gerarId: () => 'id2' }).items[0].system.description.value, '<p>O golem de ferro expele gás.</p>');
 });

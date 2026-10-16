@@ -7,11 +7,10 @@ import { ID_AJUSTE_ND } from '../api-ajuste-nd.js';
 
 export const TIPOS_ITEM_EXTRA = ['poder', 'magia'];
 
-// `origem` é o nome da criatura de onde o item veio (a ficha ou o compêndio de ameaças); sem ela, o texto não é trocado.
-export function itemExtraDe(dados, origem) {
+export function itemExtraDe(dados) {
   if (!dados || !TIPOS_ITEM_EXTRA.includes(dados.type)) return null;
   const { _id, folder, sort, ownership, _stats, ...resto } = structuredClone(dados);
-  return { ...resto, flags: { ...resto.flags, [ID_FORJA]: { extra: true, ...(origem && { origem }) } } };
+  return { ...resto, flags: { ...resto.flags, [ID_FORJA]: { extra: true } } };
 }
 
 // Linha de ataque a partir de uma arma do T20: nome, propósito, tipo de dano, quantidade e dano adicional.

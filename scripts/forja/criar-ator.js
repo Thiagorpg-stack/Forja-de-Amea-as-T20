@@ -17,14 +17,13 @@ const escaparHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
 
 const escaparRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// O poder arrastado de uma criatura fala dela no texto ("O golem de ferro expele..."): o nome completo da criatura de
-// origem (flag gravada ao soltar o poder) vira o nome desta ameaça, só no texto fora das marcas HTML.
+// O poder arrastado de uma criatura fala dela no texto ("O golem de ferro expele..."): os nomes de criatura que o mestre
+// listou viram o nome desta ameaça, só no texto fora das marcas HTML. O mais longo vem primeiro ("orc mutante" antes de "orc").
 // shortcut: só o nome completo e o artigo fica; forma curta ("o golem") e a concordância de gênero ficam como estão.
-export function comNomeDaAmeaca(item, nome) {
-  const origem = item.flags?.[ID_FORJA]?.origem;
+export function comNomeDaAmeaca(item, nome, origens = []) {
   const texto = item.system?.description?.value;
-  if (!origem || !texto) return item;
-  const padrao = new RegExp(escaparRegex(origem), 'gi');
+  if (!origens.length || !texto) return item;
+  const padrao = new RegExp([...origens].sort((x, y) => y.length - x.length).map(escaparRegex).join('|'), 'gi');
   const novo = texto.split(/(<[^>]*>)/).map((parte) => (parte.startsWith('<') ? parte : parte.replace(padrao, () => escaparHtml(nome)))).join('');
   if (novo === texto) return item;
   const copia = structuredClone(item);
@@ -93,7 +92,7 @@ export function montarDadosAtor(ameaca, { gerarId, pasta = null, agora = new Dat
     item.flags = { [ID_FORJA]: { indiceAtaque: indice } };
     return item;
   });
-  const extras = (ameaca.itensExtras ?? []).map((item) => ({ ...structuredClone(comNomeDaAmeaca(item, ameaca.nome)), _id: gerarId() }));
+  const extras = (ameaca.itensExtras ?? []).map((item) => ({ ...structuredClone(comNomeDaAmeaca(item, ameaca.nome, ameaca.nomesOrigem)), _id: gerarId() }));
   dados.items = [...armas, ...extras];
 
   dados.flags = { [ID_FORJA]: { origem: 'forja', nd, criadoEm: agora } };

@@ -49,7 +49,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
     super(options);
     this.estado = {
-      nome: '', conceito: '', img: '', token: '', itensExtras: [],
+      nome: '', conceito: '', img: '', token: '', itensExtras: [], nomesOrigem: '',
       nd: '5', papel: 'solo', chefeFinal: false, enxame: false, bando: false, bandoEscala: '10-20', bandoAumento: 2, conjurador: false, conjuracao: 'int',
       tamanho: 'med', tipo: 'mon', deslocamento: 9,
       atributos: Object.fromEntries(ATRIBUTOS.map((a) => [a, 0])),
@@ -183,6 +183,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     for (const campo of ['nome', 'conceito', 'img', 'token', 'nd', 'papel', 'tamanho', 'tipo', 'deslocamento', 'conjuracao']) {
       e[campo] = valor(campo) ?? e[campo];
     }
+    e.nomesOrigem = valor('nomesOrigem') ?? e.nomesOrigem;
     e.chefeFinal = el.querySelector('[name=chefeFinal]')?.checked ?? e.chefeFinal;
     e.enxame = el.querySelector('[name=enxame]')?.checked ?? e.enxame;
     e.bando = el.querySelector('[name=bando]')?.checked ?? e.bando;
@@ -253,11 +254,17 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     const item = await fromUuid(arrasto.uuid);
     const dados = item?.toObject();
     const linha = ataqueDeArma(dados); // arma vira linha de ataque; poder e magia entram como item
-    const extra = itemExtraDe(dados, item?.parent?.name); // a criatura da ficha de onde o poder veio, se houver
+    const extra = itemExtraDe(dados);
     if (!linha && !extra) { ui.notifications.warn(game.i18n.format('T20FA.AvisoItemNaoSuportado', { tipo: item?.type ?? '?' })); return; }
     this.#lerFormulario();
     if (linha) this.estado.ataques.push(linha);
-    else this.estado.itensExtras.push(extra);
+    else {
+      this.estado.itensExtras.push(extra);
+      // A ficha de onde o poder veio dá o nome da criatura citada no texto (poder de compêndio de itens avulsos não tem ficha).
+      const origem = item?.parent?.name;
+      const lista = this.estado.nomesOrigem.split(/[,;\n]/).map((n) => n.trim()).filter(Boolean);
+      if (origem && !lista.some((n) => n.toLowerCase() === origem.toLowerCase())) this.estado.nomesOrigem = [...lista, origem].join(', ');
+    }
     if (extra?.type === 'magia' && !this.estado.conjurador) { // magia sem PM não lança nada: o mestre desmarca se não quiser
       this.estado.conjurador = true;
       ui.notifications.info(t('T20FA.AvisoConjuradorMarcado'));

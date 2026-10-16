@@ -73,6 +73,8 @@ export function ameacaDeFormulario(f) {
       atributos,
       ataques,
       itensExtras: Array.isArray(f.itensExtras) ? f.itensExtras.filter((i) => TIPOS_ITEM_EXTRA.includes(i?.type)) : [],
+      // criaturas citadas nos textos dos poderes arrastados (vírgula, ponto e vírgula ou linha), sem vazios nem repetidos
+      nomesOrigem: [...new Set(String(f.nomesOrigem ?? '').split(/[,;\n]/).map((n) => n.trim()).filter(Boolean))],
       chefeFinal: Boolean(f.chefeFinal),
       enxame,
       bando: bando ? { escala: f.bandoEscala, aumentoND: Number.isNaN(aumento) ? aumentoPadrao(f.bandoEscala) : Math.min(12, Math.max(0, aumento)) } : null,

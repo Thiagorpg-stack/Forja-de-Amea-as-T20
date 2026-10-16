@@ -23,8 +23,9 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **0.4.1**: a troca do nome da criatura nos textos dos poderes passa a ser um campo "Nomes de criaturas nos textos" (o nome da ficha de origem entra sozinho quando o Foundry o informa), porque poderes de compêndios de itens avulsos não têm ficha de origem.
 - **0.4.0**: templates Enxame e Bando (com escala e aumento de ND): o Enxame sozinho desabilita os ataques e o Bando mostra as notas do Ajustar ND na prévia e leva o token ao tamanho do bando.
-- **0.3.3**: ao criar, o nome da criatura de onde um poder arrastado veio (por exemplo "Golem de Ferro" no Sopro do golem) vira o nome da ameaça no texto do poder. Só o nome completo é trocado e o artigo fica como está.
+- **0.3.3**: ao criar, o nome da criatura citado no texto de um poder arrastado vira o nome da ameaça (só o nome completo; o artigo fica como está). Só funcionava quando o poder vinha de uma ficha; a 0.4.1 corrige.
 - **0.3.2**: a rodada se divide por igual entre os golpes (não pela proporção de uma arma que nasce com 1d6 provisório); com o Ajustar ND 0.11.0, poder só de dados segue só dados.
 - **0.3.1**: a prévia (e as opções dos poderes arrastados) aparece mesmo sem o nome da ameaça; o Criar só habilita com o nome.
 - **0.3.0**: soltar uma magia marca Conjurador sozinha; em um poder arrastado com dano, as caixas "Ajustar o dano pela tabela do ND" e "Com efeito" (desligadas por padrão) com a prévia antes → depois; linha de ataque mais compacta.

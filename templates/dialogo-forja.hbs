@@ -150,6 +150,11 @@
       {{/if}}
     </div>
     {{/each}}
+    {{#if itensExtras.length}}
+    <label title="{{localize 'T20FA.NomesOrigemDica'}}">{{localize "T20FA.NomesOrigem"}}
+      <input type="text" name="nomesOrigem" value="{{e.nomesOrigem}}" placeholder="{{localize 'T20FA.NomesOrigemExemplo'}}">
+    </label>
+    {{/if}}
   </fieldset>
 
   {{#if erros.length}}
