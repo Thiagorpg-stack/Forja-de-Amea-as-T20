@@ -51,3 +51,22 @@ test('nomesCitados: só os nomes da lista que aparecem no texto, na ordem da lis
   assert.deepEqual(nomesCitados('', ['lobo']), []);
   assert.deepEqual(nomesCitados(undefined, ['lobo']), []);
 });
+
+test('trocarNomes: caractere invisível e vários separadores seguidos não impedem o casamento', () => {
+  const variantes = [
+    'centopeia-\u200bdragão', 'centopeia\u200b-dragão', 'centopeia\u2060-\ufeffdragão', 'cento\u200bpeia-dragão',
+    'centopeia-\ndragão', 'centopeia- dragão', 'centopeia - dragão', 'centopeia  dragão', 'centopeia-\u00a0\u00a0dragão',
+  ];
+  for (const v of variantes) {
+    assert.equal(trocarNomes(`<p>no turno da ${v}, todas sofrem.</p>`, ['centopeia-dragão'], 'Lobush'), '<p>no turno da Lobush, todas sofrem.</p>', JSON.stringify(v));
+  }
+  // o nome digitado também pode ter separador duplo ou caractere invisível
+  assert.equal(trocarNomes('<p>a centopeia-dragão ataca</p>', ['centopeia -  dragão\u200b'], 'X'), '<p>a X ataca</p>');
+  // só o trecho do nome é trocado: o que vem antes e depois fica
+  assert.equal(trocarNomes('<p>A\u200b centopeia-\u200bdragão\u200b, forte.</p>', ['centopeia-dragão'], 'X'), '<p>A\u200b X\u200b, forte.</p>');
+});
+
+test('nomesCitados e igualNome também ignoram invisíveis e separadores repetidos', () => {
+  assert.deepEqual(nomesCitados('<p>a centopeia-\u200bdragão ataca</p>', ['centopeia dragao']), ['centopeia dragao']);
+  assert.equal(igualNome('centopeia-\u200bdragão', 'Centopeia  Dragao'), true);
+});
