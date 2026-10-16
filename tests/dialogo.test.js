@@ -484,3 +484,22 @@ test('a troca real: o nome com hífen diferente no texto do poder é trocado ao 
     ajusteNd.api = original;
   }
 });
+
+test('o texto do compêndio com &atilde; é achado e trocado (o caso real do Aura de Calor)', async () => {
+  const mundo = mundoDeCriacao();
+  const original = ajusteNd.api;
+  ajusteNd.api = mundo.api;
+  try {
+    const d = novo({ nome: 'Logash', nomesOrigem: 'centopeia-dragão' });
+    d.estado.itensExtras = [{ name: 'Aura de Calor', type: 'poder', img: 'a.svg', flags: {}, system: { description: { value: '<p>No início de cada turno da centopeia-drag&atilde;o, todas sofrem.</p>' } } }];
+    assert.deepEqual((await d._prepareContext()).itensExtras[0].trocas, ['centopeia-dragão']); // o feedback já mostra a troca
+    d.element = { querySelector: (s) => (s === '[name=nomesOrigem]' ? { value: 'centopeia-dragão' } : null), querySelectorAll: () => [] };
+    d.render = async () => { await d._prepareContext(); };
+    d.close = async () => {};
+    await DialogoForja.DEFAULT_OPTIONS.actions.criar.call(d);
+    const itens = mundo.registro.aplicouCom.rascunho.dados.items;
+    assert.equal(itens.find((i) => i.name === 'Aura de Calor').system.description.value, '<p>No início de cada turno da Logash, todas sofrem.</p>');
+  } finally {
+    ajusteNd.api = original;
+  }
+});

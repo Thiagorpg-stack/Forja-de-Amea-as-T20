@@ -24,10 +24,24 @@ function dobrar(texto) {
 }
 const ehLetra = (c) => c !== undefined && /\p{L}/u.test(c);
 
-export const igualNome = (a, b) => dobrar(a).f.join('') === dobrar(b).f.join('');
+export const igualNome = (a, b) => dobrar(limpar(a)).f.join('') === dobrar(limpar(b)).f.join('');
 
-// Trecho de texto (já sem marcas HTML) sem `&nbsp;`, em NFC: é nele que se procura e dele que sai o resultado.
-const limpar = (parte) => parte.replace(/&nbsp;/g, ' ').normalize('NFC');
+// O compêndio guarda o texto com entidades HTML ("centopeia-drag&atilde;o"); o ator criado já as tem decodificadas. Decodifica as
+// que aparecem em português, nomeadas e numéricas. &amp;, &lt; e &gt; (e seus números) ficam como estão: decodificá-los quebraria o HTML.
+const ENTIDADES = { nbsp: ' ', shy: '\u00ad', ndash: '\u2013', mdash: '\u2014', atilde: 'ã', Atilde: 'Ã', otilde: 'õ', Otilde: 'Õ', ccedil: 'ç', Ccedil: 'Ç', ntilde: 'ñ', Ntilde: 'Ñ' };
+const ACENTOS = { grave: ['àèìòù', 'ÀÈÌÒÙ'], acute: ['áéíóú', 'ÁÉÍÓÚ'], circ: ['âêîôû', 'ÂÊÎÔÛ'], uml: ['äëïöü', 'ÄËÏÖÜ'] };
+for (const [tipo, [min, mai]] of Object.entries(ACENTOS)) {
+  [...'aeiou'].forEach((v, i) => { ENTIDADES[v + tipo] = min[i]; ENTIDADES[v.toUpperCase() + tipo] = mai[i]; });
+}
+const PROTEGIDOS = new Set([38, 60, 62]); // & < >
+const decodificar = (texto) => texto.replace(/&(#x[0-9a-f]+|#\d+|[a-z][a-z0-9]*);/gi, (todo, e) => {
+  if (e[0] !== '#') return ENTIDADES[e] ?? todo;
+  const n = e[1].toLowerCase() === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+  return n > 0 && n <= 0x10ffff && !PROTEGIDOS.has(n) ? String.fromCodePoint(n) : todo;
+});
+
+// Trecho de texto (já sem marcas HTML) com as entidades decodificadas e em NFC: é nele que se procura e dele que sai o resultado.
+const limpar = (parte) => decodificar(parte).normalize('NFC');
 
 // [{ de, ate, nome }] (índices de caractere no texto) sem sobreposição, em ordem. O nome mais longo vem primeiro ("orc mutante" antes de "orc").
 function achar(texto, nomes) {
@@ -35,7 +49,7 @@ function achar(texto, nomes) {
   const livre = new Array(t.length).fill(true);
   const achados = [];
   for (const nome of [...nomes].sort((x, y) => y.length - x.length)) {
-    const n = dobrar(nome.trim()).f;
+    const n = dobrar(limpar(nome.trim())).f;
     if (!n.length) continue;
     for (let i = 0; i + n.length <= t.length; i++) {
       if (!n.every((c, k) => t[i + k] === c) || ehLetra(t[i - 1]) || ehLetra(t[i + n.length])) continue;

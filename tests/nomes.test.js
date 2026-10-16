@@ -70,3 +70,21 @@ test('nomesCitados e igualNome também ignoram invisíveis e separadores repetid
   assert.deepEqual(nomesCitados('<p>a centopeia-\u200bdragão ataca</p>', ['centopeia dragao']), ['centopeia dragao']);
   assert.equal(igualNome('centopeia-\u200bdragão', 'Centopeia  Dragao'), true);
 });
+
+// O compêndio guarda o texto com entidades HTML ("centopeia-drag&atilde;o"); o ator criado já as tem decodificadas, por isso
+// ler o ator criado não mostrava o problema: o nome com acento não casava com o texto dentro do diálogo.
+test('trocarNomes: entidades HTML (nomeadas e numéricas) casam com o nome digitado', () => {
+  const variantes = ['centopeia-drag&atilde;o', 'centopeia-drag&#227;o', 'centopeia-drag&#xE3;o', 'CENTOPEIA-DRAG&Atilde;O', 'centopeia&ndash;drag&atilde;o', 'centopeia&shy;-dragão', 'centopeia&nbsp;dragão'];
+  for (const v of variantes) {
+    assert.equal(trocarNomes(`<p>No início de cada turno da ${v}, todas sofrem.</p>`, ['centopeia-dragão'], 'Logash'), '<p>No início de cada turno da Logash, todas sofrem.</p>', v);
+  }
+  assert.equal(trocarNomes('<p>o golem de ferro faz a s&eacute;rie e o a&ccedil;o</p>', ['Golem de Ferro'], 'X'), '<p>o X faz a série e o aço</p>');
+  assert.deepEqual(nomesCitados('<p>da centopeia-drag&atilde;o</p>', ['centopeia-dragão', 'grifo']), ['centopeia-dragão']);
+  assert.equal(igualNome('centopeia-drag&atilde;o', 'Centopeia Dragão'), true);
+});
+
+test('trocarNomes: &amp;, &lt; e &gt; continuam escapados no resultado (o HTML não quebra) e entidade desconhecida fica como está', () => {
+  const html = '<p>Fogo &amp; gelo: a centopeia-drag&atilde;o &lt;ruge&gt; &foo; &#38; &#60;</p>';
+  assert.equal(trocarNomes(html, ['centopeia-dragão'], 'X'), '<p>Fogo &amp; gelo: a X &lt;ruge&gt; &foo; &#38; &#60;</p>');
+  assert.equal(trocarNomes(html, ['dragão azul'], 'X'), html); // sem ocorrência: o texto volta idêntico, entidades e tudo
+});

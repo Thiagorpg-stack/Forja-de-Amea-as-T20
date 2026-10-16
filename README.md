@@ -23,6 +23,7 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## Versões
 
+- **0.4.4**: a troca de nomes entende as entidades HTML que o compêndio usa nos textos ("centopeia-drag&atilde;o"), que era o motivo de o Aura de Calor não trocar a centopeia-dragão; &amp;, &lt; e &gt; continuam como estão.
 - **0.4.3**: o casamento dos nomes também ignora caracteres invisíveis (espaço de largura zero) e junta separadores seguidos (hífen + quebra de linha, espaço duplo).
 - **0.4.2**: a troca do nome da criatura ignora maiúscula, acento e a diferença entre hífen e espaço (um texto com hífen "não separável" não casava com o nome digitado), vale só para palavra inteira, e cada poder mostra "Troca no texto: ... → nome da ameaça"; um aviso lista os nomes que não aparecem em nenhum texto.
 - **0.4.1**: a troca do nome da criatura nos textos dos poderes passa a ser um campo "Nomes de criaturas nos textos" (o nome da ficha de origem entra sozinho quando o Foundry o informa), porque poderes de compêndios de itens avulsos não têm ficha de origem.
