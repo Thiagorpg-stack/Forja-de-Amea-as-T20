@@ -13,6 +13,23 @@ const CASAS_DO_TAMANHO = { min: 1, peq: 1, med: 1, gra: 2, eno: 3, col: 4 };
 const escaparHtml = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+const escaparRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// O poder arrastado de uma criatura fala dela no texto ("O golem de ferro expele..."): o nome completo da criatura de
+// origem (flag gravada ao soltar o poder) vira o nome desta ameaça, só no texto fora das marcas HTML.
+// shortcut: só o nome completo e o artigo fica; forma curta ("o golem") e a concordância de gênero ficam como estão.
+export function comNomeDaAmeaca(item, nome) {
+  const origem = item.flags?.[ID_FORJA]?.origem;
+  const texto = item.system?.description?.value;
+  if (!origem || !texto) return item;
+  const padrao = new RegExp(escaparRegex(origem), 'gi');
+  const novo = texto.split(/(<[^>]*>)/).map((parte) => (parte.startsWith('<') ? parte : parte.replace(padrao, () => escaparHtml(nome)))).join('');
+  if (novo === texto) return item;
+  const copia = structuredClone(item);
+  copia.system.description.value = novo;
+  return copia;
+}
+
 // Dano elementar aparece na linha de ataques ("1d6 de fogo"); o físico é omitido, como nas fichas oficiais.
 const DANO_NA_LINHA = {
   acido: 'ácido', eletricidade: 'eletricidade', essencia: 'essência', fogo: 'fogo', frio: 'frio', luz: 'luz',
@@ -74,7 +91,7 @@ export function montarDadosAtor(ameaca, { gerarId, pasta = null, agora = new Dat
     item.flags = { [ID_FORJA]: { indiceAtaque: indice } };
     return item;
   });
-  const extras = (ameaca.itensExtras ?? []).map((item) => ({ ...structuredClone(item), _id: gerarId() }));
+  const extras = (ameaca.itensExtras ?? []).map((item) => ({ ...structuredClone(comNomeDaAmeaca(item, ameaca.nome)), _id: gerarId() }));
   dados.items = [...armas, ...extras];
 
   dados.flags = { [ID_FORJA]: { origem: 'forja', nd, criadoEm: agora } };

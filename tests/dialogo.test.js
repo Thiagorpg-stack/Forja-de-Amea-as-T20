@@ -390,3 +390,13 @@ test('ler o formulário: as caixas do poder viram a flag no item; "efeito" desab
   await DialogoForja.DEFAULT_OPTIONS.actions.addAtaque.call(d);
   assert.equal(AJUSTE_ND in d.estado.itensExtras[0].flags, false); // desligou: a flag some
 });
+
+test('soltar um poder de uma ficha guarda o nome da criatura de origem; sem ficha de origem, não guarda', async () => {
+  const daFicha = { ...itemFalso('poder', 'Sopro'), parent: { name: 'Golem de Ferro' } };
+  const a = dialogoComZona({ type: 'Item', uuid: 'O1' }, { O1: daFicha });
+  await a.soltar();
+  assert.deepEqual(a.d.estado.itensExtras[0].flags['t20-forja-ameacas'], { extra: true, origem: 'Golem de Ferro' });
+  const solto = dialogoComZona({ type: 'Item', uuid: 'O2' }, { O2: itemFalso('poder', 'Sopro') });
+  await solto.soltar();
+  assert.deepEqual(solto.d.estado.itensExtras[0].flags['t20-forja-ameacas'], { extra: true });
+});

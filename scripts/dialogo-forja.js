@@ -243,7 +243,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     const item = await fromUuid(arrasto.uuid);
     const dados = item?.toObject();
     const linha = ataqueDeArma(dados); // arma vira linha de ataque; poder e magia entram como item
-    const extra = itemExtraDe(dados);
+    const extra = itemExtraDe(dados, item?.parent?.name); // a criatura da ficha de onde o poder veio, se houver
     if (!linha && !extra) { ui.notifications.warn(game.i18n.format('T20FA.AvisoItemNaoSuportado', { tipo: item?.type ?? '?' })); return; }
     this.#lerFormulario();
     if (linha) this.estado.ataques.push(linha);
