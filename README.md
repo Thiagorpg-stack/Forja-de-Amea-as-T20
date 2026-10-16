@@ -16,18 +16,22 @@ Módulo do Foundry VTT para o sistema **Tormenta20** que cria uma ameaça pronta
 
 ## O que o módulo faz e não faz
 
-- Os poderes e magias arrastados entram **como estão**: o dano deles não é recalculado pelo ND, mas contam para o aviso de patamar.
+- Os poderes e magias arrastados entram **como estão** (contam para o aviso de patamar). Em um poder com dano você pode ligar **Ajustar o dano pela tabela do ND**; magia não tem essa opção.
 - Uma arma arrastada **não** é copiada: só nome, propósito, tipo de dano, quantidade, descrição e dano adicional viram a linha de ataque. Fórmula e bônus do dano principal saem da tabela.
 - O dano extra fica fixo e entra na conta da rodada: o Ajustar ND diminui o dano principal para o total bater com a tabela.
 - Os atributos não mudam o ND: os números finais vêm sempre da tabela.
 
 ## Versões
 
-- **Em andamento (0.3.0, fase A)**: soltar uma magia marca Conjurador sozinha; linha de ataque mais compacta.
+- **0.3.0**: soltar uma magia marca Conjurador sozinha; em um poder arrastado com dano, as caixas "Ajustar o dano pela tabela do ND" e "Com efeito" (desligadas por padrão) com a prévia antes → depois; linha de ataque mais compacta.
 - **0.2.6**: o ator é criado já ajustado (o Ajustar ND roda sobre um ator ainda não salvo e cria o final), porque atualizar as perícias de um ator existente devolve "for" ao atributo de Fortitude, Reflexos e Vontade (medido no Foundry 14 com o Tormenta20 1.6.6).
 - **0.2.1**: corrige o botão Criar ameaça, que falhava quando o formulário era lido (erro `null.value`).
 - **0.2.0**: arrastar arma (vira linha de ataque) e dano extra por ataque.
 - **0.1.0**: primeira versão (criar ameaça por ND e papel, imagens por URL, arrastar poderes e magias).
+
+## Notas técnicas
+
+O ator é criado já ajustado, porque atualizar as perícias de um ator existente devolve `for` ao atributo de Fortitude, Reflexos e Vontade. Detalhes em [docs/aprendizados.md](docs/aprendizados.md). O plano das próximas versões está em [docs/plano-0.3.0.md](docs/plano-0.3.0.md).
 
 ## Desenvolvimento
 

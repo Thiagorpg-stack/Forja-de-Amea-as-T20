@@ -287,3 +287,73 @@ test('soltar uma magia marca Conjurador (PM = 5 × ND) e avisa; poder não marca
   await DialogoForja.DEFAULT_OPTIONS.actions.removerItemExtra.call(magia.d, null, { dataset: { indice: '0' } });
   assert.deepEqual([magia.d.estado.itensExtras.length, magia.d.estado.conjurador], [0, true]); // quem decide desmarcar é o mestre
 });
+
+// Dano dos poderes arrastados: o Ajustar ND só recalcula o poder que leva a flag; a Forja a grava no item arrastado.
+const AJUSTE_ND = 'tormenta20-ajuste-nd';
+const sopro = (extra = {}) => ({ name: 'Sopro', type: 'poder', img: 'a.svg', flags: {}, system: { ativacao: { execucao: 'action' }, rolls: [] }, ...extra });
+
+// simular que devolve a prévia dos poderes do ator simulado, como o Ajustar ND 0.10
+async function comPreviaDePoderes(aoSimular, teste) {
+  const original = ajusteNd.api.simular;
+  ajusteNd.api.simular = async (ator, opcoes) => {
+    const base = await original(ator, opcoes);
+    const poderes = ator.dados.items.filter((i) => i.type === 'poder').map((i) => ({
+      id: i._id, nome: i.name, padrao: true, efeito: true, ajustar: Boolean(i.flags?.[AJUSTE_ND]?.danoPoder?.ajustar),
+      antes: '16d12', depois: i.flags?.[AJUSTE_ND]?.danoPoder?.ajustar ? '12d12' : null,
+    }));
+    return { ...base, ...aoSimular?.(ator), poderesPrevia: poderes };
+  };
+  try { await teste(); } finally { ajusteNd.api.simular = original; }
+}
+
+test('poder arrastado com dano: a tela mostra as caixas (desligadas por padrão) e o antes; magia e poder sem prévia não mostram', async () => {
+  await comPreviaDePoderes(null, async () => {
+    const d = novo();
+    d.estado.itensExtras = [sopro(), sopro({ name: 'Bola de Fogo', type: 'magia' })];
+    const ctx = await d._prepareContext();
+    const [poder, magia] = ctx.itensExtras;
+    assert.deepEqual([poder.temDano, poder.ajustar, poder.efeito, poder.padrao, poder.antes, poder.depois], [true, false, true, true, '16d12', null]);
+    assert.equal(magia.temDano, false); // o Ajustar ND só trata poder
+    assert.deepEqual(ctx.previa.poderes, []);
+  });
+});
+
+test('ligar "ajustar o dano" grava a flag no item enviado ao Ajustar ND e a prévia mostra antes → depois', async () => {
+  await comPreviaDePoderes(null, async () => {
+    chamadas.length = 0;
+    const d = novo();
+    d.estado.itensExtras = [sopro({ flags: { [AJUSTE_ND]: { danoPoder: { ajustar: true, efeito: false } } } })];
+    const ctx = await d._prepareContext();
+    const enviado = chamadas[0].actor.dados.items.find((i) => i.name === 'Sopro');
+    assert.deepEqual(enviado.flags[AJUSTE_ND].danoPoder, { ajustar: true, efeito: false });
+    assert.deepEqual([ctx.itensExtras[0].ajustar, ctx.itensExtras[0].depois], [true, '12d12']);
+    assert.deepEqual(ctx.previa.poderes, [{ nome: 'Sopro', antes: '16d12', depois: '12d12' }]);
+  });
+});
+
+test('Ajustar ND antigo, sem prévia dos poderes: nada quebra e as caixas não aparecem', async () => {
+  const d = novo();
+  d.estado.itensExtras = [sopro()];
+  const ctx = await d._prepareContext(); // o mock padrão não devolve poderesPrevia
+  assert.equal(ctx.itensExtras[0].temDano, false);
+  assert.deepEqual(ctx.previa.poderes, []);
+});
+
+test('ler o formulário: as caixas do poder viram a flag no item; "efeito" desabilitado fica de fora', async () => {
+  const d = novo();
+  d.estado.itensExtras = [sopro(), sopro({ name: 'Rugido' })];
+  const caixa = (marcada, desabilitada = false) => ({ checked: marcada, disabled: desabilitada });
+  const linha = (indice, ajustar, efeito) => ({
+    dataset: { item: String(indice) },
+    querySelector: (s) => (s === '[data-campo-item=ajustar]' ? ajustar : s === '[data-campo-item=efeito]' ? efeito : null),
+  });
+  const tela = (linhas) => ({ querySelector: () => null, querySelectorAll: (s) => (s === '[data-item]' ? linhas : []) });
+  d.render = async () => {};
+  d.element = tela([linha(0, caixa(true), caixa(false)), linha(1, caixa(true), caixa(true, true))]);
+  await DialogoForja.DEFAULT_OPTIONS.actions.addAtaque.call(d); // lê o formulário antes de mexer
+  assert.deepEqual(d.estado.itensExtras[0].flags[AJUSTE_ND].danoPoder, { ajustar: true, efeito: false });
+  assert.deepEqual(d.estado.itensExtras[1].flags[AJUSTE_ND].danoPoder, { ajustar: true }); // efeito desabilitado: o Ajustar ND detecta
+  d.element = tela([linha(0, caixa(false), caixa(false)), linha(1, caixa(true), caixa(true, true))]);
+  await DialogoForja.DEFAULT_OPTIONS.actions.addAtaque.call(d);
+  assert.equal(AJUSTE_ND in d.estado.itensExtras[0].flags, false); // desligou: a flag some
+});

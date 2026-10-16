@@ -1,7 +1,7 @@
 // Diálogo "Forjar Ameaça" (adaptado do diálogo do 5e para T20): o mestre escolhe ND e papel, a ficha é completada
 // pelo Ajustar ND. Simula o ajuste num ator não salvo e só cria o ator quando o mestre confirma.
-import { obterApi } from './api-ajuste-nd.js';
-import { itemExtraDe, ataqueDeArma } from './forja/itens-extras.js';
+import { obterApi, ID_AJUSTE_ND } from './api-ajuste-nd.js';
+import { itemExtraDe, ataqueDeArma, comDanoAjustado } from './forja/itens-extras.js';
 import { ehUrl } from './forja/imagem.js';
 import { PREFIXO_IMAGEM, guardarImagem, trazerDaUrl } from './imagem-foundry.js';
 import { papelDoSistema, CODIGOS_TAMANHO, CODIGOS_TIPO, CHAVES_DANO, NDS } from './forja/mapeamentos.js';
@@ -107,7 +107,7 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
         indice: i, rotulo,
         opcoes: Object.entries(TESTES).map(([valor, nome]) => ({ valor, nome, selecionado: valor === e.ordem[i] })),
       })),
-      itensExtras: e.itensExtras.map((i, indice) => ({ indice, nome: i.name, tipo: i.type, img: i.img })),
+      itensExtras: e.itensExtras.map((i, indice) => ({ indice, nome: i.name, tipo: i.type, img: i.img, temDano: false })),
       erros: [], previa: null,
     };
     this.pronto = null;
@@ -134,6 +134,17 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       const idPorIndice = Object.fromEntries(itens.map((i) => [i.flags?.[ID_FORJA]?.indiceAtaque, i._id]));
       const r = await p.api.simular(rascunho, opcoes);
       ctx.previa = this.#montarPrevia(r, p.ameaca, idPorIndice);
+      // Os itens arrastados vêm depois das armas no ator simulado: a prévia do Ajustar ND acha cada poder pelo id.
+      const idsDosExtras = itens.slice(p.ameaca.ataques.length).map((i) => i._id);
+      e.itensExtras.forEach((item, j) => {
+        const previa = r.poderesPrevia?.find((x) => x.id === idsDosExtras[j]);
+        if (!previa) return; // magia, poder sem dano numérico ou Ajustar ND antigo: sem caixas
+        const flag = item.flags?.[ID_AJUSTE_ND]?.danoPoder;
+        Object.assign(ctx.itensExtras[j], {
+          temDano: true, ajustar: Boolean(flag?.ajustar), efeito: flag?.efeito ?? previa.efeito, padrao: previa.padrao,
+          antes: previa.antes, depois: previa.depois,
+        });
+      });
       this.pronto = { dados: p.dados, ameaca: p.ameaca, opcoes: p.opcoes };
     } catch (erro) {
       console.error(`${ID_FORJA} |`, erro);
@@ -152,7 +163,8 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
       ...Object.entries(TESTES).map(([k, nome]) => linha(nome, r.depois.pericias[k])),
     ];
     const armas = ameaca.ataques.map((a, i) => ({ nome: a.nome, qtd: a.qtd, formula: r.plano.dano?.porArma?.[idPorIndice[i]]?.formula ?? '—' }));
-    return { linhas, armas, danoAlvo: r.plano.linha.Dano, avisos: r.avisos, patamar: r.patamar, revisar: r.plano.revisar };
+    const poderes = (r.poderesPrevia ?? []).filter((x) => x.depois).map(({ nome, antes, depois }) => ({ nome, antes, depois }));
+    return { linhas, armas, poderes, danoAlvo: r.plano.linha.Dano, avisos: r.avisos, patamar: r.patamar, revisar: r.plano.revisar };
   }
 
   // ---------- leitura do formulário ----------
@@ -169,6 +181,13 @@ export class DialogoForja extends HandlebarsApplicationMixin(ApplicationV2) {
     e.conjurador = el.querySelector('[name=conjurador]')?.checked ?? e.conjurador;
     ATRIBUTOS.forEach((a) => { e.atributos[a] = valor(`atributo-${a}`) ?? e.atributos[a]; });
     e.ordem = [0, 1, 2].map((i) => valor(`ordem-${i}`) ?? e.ordem[i]);
+    el.querySelectorAll('[data-item]').forEach((linha) => { // "ajustar o dano" e "com efeito" de cada poder arrastado
+      const i = Number(linha.dataset.item);
+      const ajustar = linha.querySelector('[data-campo-item=ajustar]');
+      if (!ajustar || !e.itensExtras[i]) return;
+      const efeito = linha.querySelector('[data-campo-item=efeito]');
+      e.itensExtras[i] = comDanoAjustado(e.itensExtras[i], { ajustar: ajustar.checked, efeito: efeito && !efeito.disabled ? efeito.checked : undefined });
+    });
     // As linhas na tela espelham o estado, então lista vazia na tela é lista vazia no estado.
     const anteriores = e.ataques; // a descrição (vem da arma arrastada) não tem campo na tela
     e.ataques = [...el.querySelectorAll('[data-ataque]')].map((linha, i) => ({

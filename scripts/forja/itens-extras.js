@@ -3,6 +3,7 @@
 // arma vira uma linha de ataque (o dano principal sai da tabela do ND).
 import { ID_FORJA } from './criar-ator.js';
 import { CHAVES_DANO, FORMULA_DANO } from './mapeamentos.js';
+import { ID_AJUSTE_ND } from '../api-ajuste-nd.js';
 
 export const TIPOS_ITEM_EXTRA = ['poder', 'magia'];
 
@@ -28,4 +29,18 @@ export function ataqueDeArma(dados) {
       .map(([formula, tipo]) => ({ formula: String(formula ?? '').replace(/\s+/g, ''), tipo: tipoDe(tipo) }))
       .filter((d) => FORMULA_DANO.test(d.formula)), // fórmula com variável (@mod) fica de fora
   };
+}
+
+// O Ajustar ND só recalcula o dano do poder que leva a flag danoPoder = { ajustar, efeito } (sem `efeito` ele detecta pelo
+// texto). A escolha do mestre viaja dentro do próprio item arrastado: remover o item remove a escolha. Devolve uma cópia.
+export function comDanoAjustado(item, { ajustar, efeito }) {
+  const copia = structuredClone(item);
+  copia.flags ??= {};
+  if (ajustar) {
+    copia.flags[ID_AJUSTE_ND] = { ...copia.flags[ID_AJUSTE_ND], danoPoder: { ajustar: true, ...(efeito !== undefined && { efeito }) } };
+  } else if (copia.flags[ID_AJUSTE_ND]) {
+    delete copia.flags[ID_AJUSTE_ND].danoPoder;
+    if (!Object.keys(copia.flags[ID_AJUSTE_ND]).length) delete copia.flags[ID_AJUSTE_ND];
+  }
+  return copia;
 }
